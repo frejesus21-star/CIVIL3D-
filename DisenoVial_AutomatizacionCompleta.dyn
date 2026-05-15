@@ -387,6 +387,555 @@
       ],
       "Replication": "Disabled",
       "Description": "Visualizes a node's output"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
+      "NodeType": "CodeBlockNode",
+      "Code": "[{\"name\":\"PLT-01\",\"pk_start\":500,\"pk_end\":650,\"width\":8,\"side\":\"right\"},{\"name\":\"PLT-02\",\"pk_start\":1200,\"pk_end\":1380,\"width\":10,\"side\":\"left\"}]",
+      "Id": "f0dcdeec-d69d-4b27-b5a2-9a4a3bdf35f7",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "5370e651-e729-49db-9d01-339659816da7",
+          "Name": ">",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Plataformas (JSON)",
+      "Name": "Plataformas JSON"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "6f056a83-0fdd-4ddb-8fcc-4a4acff7d233",
+      "Inputs": [
+        {
+          "Id": "42c248f8-0d02-4c5f-87fd-a12c5903f97f",
+          "Name": "IN[0]",
+          "Description": "alignment_ids"
+        },
+        {
+          "Id": "c1803fb8-f210-4e4f-9594-f7b4f6fb8c83",
+          "Name": "IN[1]",
+          "Description": "profile_name"
+        },
+        {
+          "Id": "e19091bc-2259-475c-b8b1-b31905ce605a",
+          "Name": "IN[2]",
+          "Description": "surface_name"
+        },
+        {
+          "Id": "18a9d886-aa25-44b8-824d-6a6bf9716908",
+          "Name": "IN[3]",
+          "Description": "platforms_json"
+        },
+        {
+          "Id": "d73a90b6-ac63-4630-b892-5d21364ac585",
+          "Name": "IN[4]",
+          "Description": "kv"
+        },
+        {
+          "Id": "2d1a498c-8f14-4069-8a17-4c645bc5b67c",
+          "Name": "IN[5]",
+          "Description": "road_half_width"
+        },
+        {
+          "Id": "c7d25949-80ce-4820-aefd-0fecc1deb406",
+          "Name": "IN[6]",
+          "Description": "cross_slope_road_pct"
+        },
+        {
+          "Id": "c5ad6e97-82fa-44ca-9177-d56c248812d8",
+          "Name": "IN[7]",
+          "Description": "cross_slope_plt_pct"
+        },
+        {
+          "Id": "dddee85a-8b85-4492-90d1-b878a30a7df2",
+          "Name": "IN[8]",
+          "Description": "section_spacing"
+        },
+        {
+          "Id": "d349314d-d680-4fab-bb89-3f23f15487c5",
+          "Name": "IN[9]",
+          "Description": "cut_slope_hv"
+        },
+        {
+          "Id": "1877673c-97a9-456e-ab9c-dd61f7ba7f9e",
+          "Name": "IN[10]",
+          "Description": "fill_slope_hv"
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "9a8611f1-154b-4184-b329-0300f7690e98",
+          "Name": "OUT",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Compensación de tierras + acuerdos KV=800",
+      "Name": "PASO 6: Compensar Tierras KV=800",
+      "Code": "# PASO 6: Compensar tierras (geometría exacta con taludes)\n# IN[0] alignment_ids   IN[1] profile_name    IN[2] surface_name\n# IN[3] platforms_json  IN[4] kv              IN[5] road_half_width\n# IN[6] cross_slope_road_pct   IN[7] cross_slope_plt_pct\n# IN[8] section_spacing  IN[9] cut_slope_hv   IN[10] fill_slope_hv\nimport clr, sys, json, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path: sys.path.insert(0, _p)\n\ntry:\n    from platforms import (Platform, compensate_earthwork_all,\n                           resolve_surface_id, resolve_profile_id,\n                           list_profile_names, KV_DEFAULT)\nexcept ImportError as ie:\n    OUT = [[], [\"ERROR: platforms.py no encontrado: %s\" % ie]]; raise SystemExit(0)\n\nlogs = []\nalignment_ids   = IN[0] if isinstance(IN[0], list) else [IN[0]]\nprofile_name    = str(IN[1]).strip()\nsurface_name    = str(IN[2]).strip()\nplatform_json   = str(IN[3]).strip()\nkv              = float(IN[4])  if IN[4]  is not None else KV_DEFAULT\nroad_hw         = float(IN[5])  if IN[5]  is not None else 4.0\ncross_sl_road   = float(IN[6])  if IN[6]  is not None else 2.5\ncross_sl_plt    = float(IN[7])  if IN[7]  is not None else 2.5\nspacing         = float(IN[8])  if IN[8]  is not None else 5.0\ncut_hv          = float(IN[9])  if IN[9]  is not None else 1.0\nfill_hv         = float(IN[10]) if IN[10] is not None else 1.5\n\ntry:\n    surface_id = resolve_surface_id(surface_name)\n    logs.append(\"Superficie '%s' OK.\" % surface_name)\nexcept ValueError as ex:\n    OUT = [[], [str(ex)]]; raise SystemExit(0)\n\ntry:\n    defs = json.loads(platform_json)\nexcept Exception as ex:\n    OUT = [[], [\"ERROR JSON: %s\" % ex]]; raise SystemExit(0)\n\nplatforms = []\nfor item in defs:\n    try:\n        p = Platform(\n            name             = item['name'],\n            pk_start         = float(item['pk_start']),\n            pk_end           = float(item['pk_end']),\n            width            = float(item['width']),\n            side             = item.get('side', 'right'),\n            slope_pct        = float(item.get('slope_pct', 2.0)),\n            elevation_offset = item.get('elevation_offset', None),\n            cut_hv           = float(item.get('cut_hv',  cut_hv)),\n            fill_hv          = float(item.get('fill_hv', fill_hv)),\n        )\n        platforms.append(p)\n        logs.append(\"OK: %s\" % p)\n    except Exception as ex:\n        logs.append(\"ERROR '%s': %s\" % (item.get('name','?'), ex))\n\nif not platforms:\n    OUT = [[], logs + [\"Sin plataformas validas.\"]]; raise SystemExit(0)\n\nfor ali_id in alignment_ids:\n    profile_id = resolve_profile_id(ali_id, profile_name)\n    if profile_id is None:\n        logs.append(\"AVISO: rasante '%s' no encontrada. Disponibles: %s\"\n                    % (profile_name, list_profile_names(ali_id)))\n        OUT = [[], logs]; raise SystemExit(0)\n\n    results = compensate_earthwork_all(\n        surface_id, ali_id, profile_id, platforms,\n        kv=kv, road_half_width=road_hw,\n        cross_slope_road_pct=cross_sl_road,\n        cross_slope_plt_pct=cross_sl_plt,\n        spacing=spacing, search_range=5.0,\n    )\n    for r in results:\n        logs.append(\n            \"[%(name)s] Dz=%(elevation_offset)+.3fm  \"\n            \"Corte=%(volume_cut).1f m3  Relleno=%(volume_fill).1f m3  \"\n            \"Balance=%(balance_m3)+.1f m3  \"\n            \"L_ent=%(L_entry).1f m  L_sal=%(L_exit).1f m\" % r\n        )\n        for w in r.get('warnings',[]): logs.append(\"  AVISO: \" + w)\n        for e in r.get('errors',  []): logs.append(\"  ERROR: \" + e)\n\nOUT = [platforms, logs]\n"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Engine": "IronPython2",
+      "VariableInputPorts": true,
+      "Id": "dd65cf68-127f-4a38-9673-2b2166cd7459",
+      "Inputs": [
+        {
+          "Id": "f0f6eb2e-cd02-4bb2-9fa1-d4911781dfea",
+          "Name": "IN[0]",
+          "Description": "platforms"
+        },
+        {
+          "Id": "424ee6e3-5511-42b3-975e-987592223471",
+          "Name": "IN[1]",
+          "Description": "corridor_ids"
+        },
+        {
+          "Id": "1b9edf34-4824-4a41-bc2f-3413df6ff72c",
+          "Name": "IN[2]",
+          "Description": "alignment_ids"
+        },
+        {
+          "Id": "d49e9fdf-8cb4-4e82-97da-0bf82dc991a8",
+          "Name": "IN[3]",
+          "Description": "profile_name"
+        },
+        {
+          "Id": "c3c1f110-696d-4bf8-8061-10813914d8d7",
+          "Name": "IN[4]",
+          "Description": "asm_plataforma"
+        },
+        {
+          "Id": "ee16fd2d-9681-40ed-aee6-c63076991bdf",
+          "Name": "IN[5]",
+          "Description": "surface_name"
+        },
+        {
+          "Id": "a3498ed6-b3e8-44d6-baf8-8d71a37b662b",
+          "Name": "IN[6]",
+          "Description": "kv"
+        },
+        {
+          "Id": "eb7b5320-ff53-425a-af24-d9148b8be684",
+          "Name": "IN[7]",
+          "Description": "road_half_width"
+        },
+        {
+          "Id": "bd4d0f15-f255-44f0-9a7c-327e9961cbc5",
+          "Name": "IN[8]",
+          "Description": "cross_slope_road_pct"
+        },
+        {
+          "Id": "89c8500c-641b-4e98-8fa5-5163c4c9099c",
+          "Name": "IN[9]",
+          "Description": "cross_slope_plt_pct"
+        },
+        {
+          "Id": "86626ea9-9064-4798-af4b-5b0505d6bc45",
+          "Name": "IN[10]",
+          "Description": "section_spacing"
+        },
+        {
+          "Id": "8160f99c-d94e-4bbb-81e6-d736c17682c4",
+          "Name": "IN[11]",
+          "Description": "layer_borde"
+        },
+        {
+          "Id": "323f0e9d-66b1-4083-b698-e64fdaa709f9",
+          "Name": "IN[12]",
+          "Description": "layer_talud"
+        },
+        {
+          "Id": "1ddafc19-9eb0-48e5-b653-b691eb2510de",
+          "Name": "IN[13]",
+          "Description": "surface_prefix"
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "7a10afeb-6fa2-4512-8036-4ce738a09925",
+          "Name": "OUT",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "PIPs rasante + regiones corredor + feature lines + TIN plataforma",
+      "Name": "PASO 7: Integrar Plataformas al Corredor",
+      "Code": "# PASO 7: Integrar Plataformas al Corredor (FL + TIN + PIPs + Regiones)\n# IN[0] platforms          IN[1] corridor_ids      IN[2] alignment_ids\n# IN[3] profile_name       IN[4] asm_plataforma    IN[5] surface_name\n# IN[6] kv                 IN[7] road_half_width   IN[8] cross_slope_road_pct\n# IN[9] cross_slope_plt_pct   IN[10] section_spacing\n# IN[11] layer_borde       IN[12] layer_talud      IN[13] surface_prefix\nimport clr, sys, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path: sys.path.insert(0, _p)\n\ntry:\n    from platforms import (\n        add_platform_pips_to_profile, add_platform_regions_to_corridor,\n        create_platform_feature_lines, create_platform_tin_surface,\n        resolve_surface_id, resolve_profile_id, list_profile_names,\n        KV_DEFAULT, LAYER_BORDE, LAYER_TALUD,\n    )\nexcept ImportError as ie:\n    OUT = [[], [\"ERROR: platforms.py no encontrado: %s\" % ie]]; raise SystemExit(0)\n\nlogs          = []\nplatforms     = IN[0]  if isinstance(IN[0], list) else [IN[0]]\ncorridor_ids  = IN[1]  if isinstance(IN[1], list) else [IN[1]]\nalignment_ids = IN[2]  if isinstance(IN[2], list) else [IN[2]]\nprofile_name  = str(IN[3]).strip()\nasm_name      = str(IN[4]).strip()\nsurface_name  = str(IN[5]).strip()\nkv            = float(IN[6])  if IN[6]  is not None else KV_DEFAULT\nroad_hw       = float(IN[7])  if IN[7]  is not None else 4.0\ncross_sl_road = float(IN[8])  if IN[8]  is not None else 2.5\ncross_sl_plt  = float(IN[9])  if IN[9]  is not None else 2.5\nspacing       = float(IN[10]) if IN[10] is not None else 5.0\nlayer_borde   = str(IN[11]).strip() if IN[11] is not None else LAYER_BORDE\nlayer_talud   = str(IN[12]).strip() if IN[12] is not None else LAYER_TALUD\nsurf_pfx      = str(IN[13]).strip() if IN[13] is not None else \"PLT\"\n\ntry:\n    surface_id = resolve_surface_id(surface_name)\nexcept ValueError as ex:\n    OUT = [[], [str(ex)]]; raise SystemExit(0)\n\nfor ali_id, cor_id in zip(alignment_ids, corridor_ids):\n    profile_id = resolve_profile_id(ali_id, profile_name)\n    if profile_id is None:\n        logs.append(\"AVISO: rasante '%s' no encontrada. Disponibles: %s\"\n                    % (profile_name, list_profile_names(ali_id)))\n        continue\n\n    logs += add_platform_pips_to_profile(ali_id, profile_id, platforms, kv)\n    logs += add_platform_regions_to_corridor(cor_id, ali_id, asm_name, platforms)\n    logs += create_platform_feature_lines(\n        surface_id, ali_id, profile_id, platforms,\n        road_half_width=road_hw,\n        cross_slope_road_pct=cross_sl_road,\n        cross_slope_plt_pct=cross_sl_plt,\n        layer_borde=layer_borde, layer_talud=layer_talud,\n        spacing=spacing,\n    )\n    logs += create_platform_tin_surface(\n        ali_id, profile_id, platforms,\n        surface_name_prefix=surf_pfx,\n        road_half_width=road_hw,\n        cross_slope_road_pct=cross_sl_road,\n        cross_slope_plt_pct=cross_sl_plt,\n        spacing=spacing,\n    )\n\nlogs.append(\"PASO 7 completado.\")\nOUT = [platforms, logs]\n"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "23178a4f-e0cd-49b3-bcb4-f4bf45ca8de5",
+      "Name": "KV (acuerdo vertical m)",
+      "Description": "Radio equiv. curva vertical (m). Default 800.",
+      "InputValue": 800.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "253b9d0e-5e11-4a32-b716-c192c7d4829a",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "e73d180a-7e7d-4fa7-921b-4d64fb1de2ad",
+      "Name": "Semi-ancho calzada (m)",
+      "Description": "Semi-ancho del camino existente en metros.",
+      "InputValue": 4.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "8578f4ec-4b13-4f95-9754-a68ef0e0b695",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "cee82eb7-79d2-4f25-81f7-d2af0ed8d920",
+      "Name": "Bombeo plataforma (%)",
+      "Description": "Pendiente transversal de drenaje de la plataforma.",
+      "InputValue": 2.5,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "38178371-ed9c-4ccf-afd0-906f8e173ee9",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "ea353cb4-6a00-41a5-ab51-9140d7321267",
+      "Name": "Espaciado secciones (m)",
+      "Description": "Distancia entre secciones transversales para volumetría.",
+      "InputValue": 5.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "eea9a25e-6888-47a6-acc1-d64910d9a563",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "b5ec87c2-77ca-4a3a-9a2e-1b4939335436",
+      "Name": "Nombre Assembly Plataforma",
+      "InputValue": "plataforma",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "94fb809a-6485-4674-bfb9-2c0ca6066d1a",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "4f5c2a0d-1a14-4da4-a46a-07e535065bac",
+      "Name": "Capa Feature Lines Plataforma",
+      "InputValue": "C-ROAD-PLATFORM",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "cb4104e9-7390-4a5c-b28c-19919188f077",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "3fbc2cb6-cdfe-4c92-877e-3522597bbbcf",
+      "Name": "Prefijo Superficie Plataforma",
+      "InputValue": "PLT",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "36883c60-d1cf-4d33-b744-9f17d0e9fc92",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "cf7d58d5-4e45-4396-ae06-6e5998314f00",
+      "Name": "Talud Corte H:V",
+      "Description": "Relacion H:V del talud de corte. 1.0 = 1:1",
+      "InputValue": 1.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "78d9b40c-f98b-4507-aad9-d3e31ce76b5e",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "894df69e-d391-4207-ae22-75cd9044fbad",
+      "Name": "Talud Relleno H:V",
+      "Description": "Relacion H:V del talud de relleno. 1.5 = 1.5:1",
+      "InputValue": 1.5,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "58609ad4-edf8-4f1a-a37f-4d9dd72417c0",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "56ae4a9c-6e11-470c-b005-9aac3b6447b0",
+      "Name": "Capa Talud (corona/pie)",
+      "InputValue": "C-ROAD-PLATFORM-TALUD",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "7645c6a8-3bb9-476b-af89-41e7a6daaea4",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "d34c4314-fcf2-4d72-89a4-636e287322e2",
+      "Name": "Bombeo calzada (%)",
+      "Description": "Pendiente transversal de la calzada (%)",
+      "InputValue": 2.5,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "c7d05b9b-4adf-469a-a463-f2f5337cfee6",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Id": "23d4e38e-11f2-4f7a-82b2-1b30b16080e3",
+      "Name": "PASO 8: Plano Final",
+      "Code": "# PASO 8: Generación del Plano Final\n# IN[0] platforms         IN[1] alignment_ids    IN[2] profile_name\n# IN[3] surface_name      IN[4] road_half_width  IN[5] cross_slope_road_pct\n# IN[6] cross_slope_plt_pct   IN[7] section_spacing\n# IN[8] create_layout     IN[9] plan_scale       IN[10] layout_name\n# IN[11] exaggeration_v   IN[12] table_y         IN[13] sections_y\n# OUT = logs\nimport clr, sys, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path: sys.path.insert(0, _p)\n\ntry:\n    from plano import generate_full_plan\n    from platforms import resolve_surface_id, resolve_profile_id, list_profile_names\nexcept ImportError as ie:\n    OUT = [\"ERROR: plano.py / platforms.py no encontrado: %s\" % ie]; raise SystemExit(0)\n\nlogs = []\nplatforms     = IN[0]  if isinstance(IN[0], list) else [IN[0]]\nalignment_ids = IN[1]  if isinstance(IN[1], list) else [IN[1]]\nprofile_name  = str(IN[2]).strip()\nsurface_name  = str(IN[3]).strip()\nroad_hw       = float(IN[4])  if IN[4]  is not None else 4.0\ncross_sl_road = float(IN[5])  if IN[5]  is not None else 2.5\ncross_sl_plt  = float(IN[6])  if IN[6]  is not None else 2.5\nspacing       = float(IN[7])  if IN[7]  is not None else 5.0\nmake_layout   = bool(IN[8])   if IN[8]  is not None else True\nplan_scale    = int(IN[9])    if IN[9]  is not None else 500\nlay_name      = str(IN[10]).strip() if IN[10] is not None else \"PLATAFORMAS\"\nexag_v        = float(IN[11]) if IN[11] is not None else 2.0\ntable_y       = float(IN[12]) if IN[12] is not None else 200.0\nsections_y    = float(IN[13]) if IN[13] is not None else -200.0\n\ntry:\n    surface_id = resolve_surface_id(surface_name)\nexcept ValueError as ex:\n    OUT = [str(ex)]; raise SystemExit(0)\n\nali_id     = alignment_ids[0]\nprofile_id = resolve_profile_id(ali_id, profile_name)\nif profile_id is None:\n    OUT = [\"Rasante '%s' no encontrada. Disponibles: %s\"\n           % (profile_name, list_profile_names(ali_id))]\n    raise SystemExit(0)\n\ntry:\n    logs = generate_full_plan(\n        surface_id, ali_id, profile_id, platforms,\n        road_half_width      = road_hw,\n        cross_slope_road_pct = cross_sl_road,\n        cross_slope_plt_pct  = cross_sl_plt,\n        spacing              = spacing,\n        create_layout        = make_layout,\n        plan_scale           = plan_scale,\n        layout_name          = lay_name,\n        table_y              = table_y,\n        sections_y           = sections_y,\n        section_exag_v       = exag_v,\n    )\nexcept Exception as ex:\n    import traceback\n    logs = [\"ERROR en generate_full_plan: %s\" % ex,\n            traceback.format_exc()]\n\nOUT = logs\n",
+      "Engine": "IronPython2",
+      "Inputs": [
+        {
+          "Id": "9b60d014-7aea-4baf-b43d-d76b57b45dec",
+          "Name": "IN[0]",
+          "Description": "platforms"
+        },
+        {
+          "Id": "6e174748-6b7c-4b49-a017-5ea49c5e7d46",
+          "Name": "IN[1]",
+          "Description": "alignment_ids"
+        },
+        {
+          "Id": "f65c92e1-4db9-430f-b6cd-e1455065f868",
+          "Name": "IN[2]",
+          "Description": "profile_name"
+        },
+        {
+          "Id": "498c88f7-8fc9-47ee-8ab5-550a8843d6c0",
+          "Name": "IN[3]",
+          "Description": "surface_name"
+        },
+        {
+          "Id": "b30325a1-f9d4-4af1-9358-671065a10497",
+          "Name": "IN[4]",
+          "Description": "road_half_width"
+        },
+        {
+          "Id": "d398cd04-efeb-4c62-9f29-85326bfe4f9f",
+          "Name": "IN[5]",
+          "Description": "cross_slope_road_pct"
+        },
+        {
+          "Id": "68bddc93-3b60-4977-8d4f-eaa24dd3f6c1",
+          "Name": "IN[6]",
+          "Description": "cross_slope_plt_pct"
+        },
+        {
+          "Id": "677edd3d-ed89-4443-bd86-619885384a05",
+          "Name": "IN[7]",
+          "Description": "section_spacing"
+        },
+        {
+          "Id": "5c94f02c-29ae-4256-868d-d0539ee74b5d",
+          "Name": "IN[8]",
+          "Description": "create_layout"
+        },
+        {
+          "Id": "92529127-ddb6-4d04-a338-341d58886700",
+          "Name": "IN[9]",
+          "Description": "plan_scale"
+        },
+        {
+          "Id": "b032f6cf-d3b4-4f78-bd24-d1890ce8c8f2",
+          "Name": "IN[10]",
+          "Description": "layout_name"
+        },
+        {
+          "Id": "1a55fe0d-9482-4664-920d-730fc273351b",
+          "Name": "IN[11]",
+          "Description": "exaggeration_v"
+        },
+        {
+          "Id": "681ff82c-f286-44b4-a060-4d4637cb2936",
+          "Name": "IN[12]",
+          "Description": "table_y"
+        },
+        {
+          "Id": "396f620d-8e39-43c3-b852-681bdc505cd3",
+          "Name": "IN[13]",
+          "Description": "sections_y"
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "0089d7ec-43db-43a6-a41f-03bad2860e5c",
+          "Name": "logs",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "BooleanInputNode",
+      "Id": "7b7aaa52-c9e8-43eb-ba73-47f7bc0faf4e",
+      "Name": "Crear Layout (S/N)",
+      "InputValue": true,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d8124426-3145-403a-a3c0-7224befbdec7",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "1c71c4d0-48e4-4690-93b4-f2d57ff2dfc8",
+      "Name": "Escala plano (1:N)",
+      "InputValue": 500,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "62ae04bc-8faf-468b-9c59-7e0a226731fb",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "e3c4906d-4574-4a67-99b4-1b03989d5b35",
+      "Name": "Nombre Layout",
+      "InputValue": "PLATAFORMAS",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6e62c65a-0c9f-4a18-889a-f342d7205295",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "61fd43b8-6c28-4340-9622-7d69b0cbfa83",
+      "Name": "Exageración vert. secciones",
+      "InputValue": 2.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "caf7d895-f332-430c-af75-397c0f589879",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "c3bf6a04-2639-4784-8583-aea0f1342df5",
+      "Name": "Y tabla volúmenes (m)",
+      "InputValue": 200.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "a939a3fa-6c6e-430b-95fe-95d5fad60c7b",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "bc0517fa-bc3f-43f3-99be-c50a5adcf5d8",
+      "Name": "Y secciones transversales (m)",
+      "InputValue": -200.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "21c64cb8-4cc3-4989-a384-2d5fc4208781",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
     }
   ],
   "Connectors": [
@@ -596,6 +1145,174 @@
         "ShowGeometry": true,
         "X": 980,
         "Y": 400
+      },
+      {
+        "Id": "f0dcdeec-d69d-4b27-b5a2-9a4a3bdf35f7",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Plataformas JSON",
+        "X": 0,
+        "Y": 880
+      },
+      {
+        "Id": "6f056a83-0fdd-4ddb-8fcc-4a4acff7d233",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Name": "PASO 6: Compensar Tierras KV=800",
+        "X": 480,
+        "Y": 1040
+      },
+      {
+        "Id": "dd65cf68-127f-4a38-9673-2b2166cd7459",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Name": "PASO 7: Integrar Plataformas",
+        "X": 980,
+        "Y": 1040
+      },
+      {
+        "Id": "23178a4f-e0cd-49b3-bcb4-f4bf45ca8de5",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "KV (acuerdo vertical m)",
+        "X": -480,
+        "Y": 880
+      },
+      {
+        "Id": "e73d180a-7e7d-4fa7-921b-4d64fb1de2ad",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Semi-ancho calzada (m)",
+        "X": -480,
+        "Y": 990
+      },
+      {
+        "Id": "cee82eb7-79d2-4f25-81f7-d2af0ed8d920",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Bombeo plataforma (%)",
+        "X": -480,
+        "Y": 1100
+      },
+      {
+        "Id": "ea353cb4-6a00-41a5-ab51-9140d7321267",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Espaciado secciones (m)",
+        "X": -480,
+        "Y": 1210
+      },
+      {
+        "Id": "b5ec87c2-77ca-4a3a-9a2e-1b4939335436",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Nombre Assembly Plataforma",
+        "X": -480,
+        "Y": 1320
+      },
+      {
+        "Id": "4f5c2a0d-1a14-4da4-a46a-07e535065bac",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Capa Feature Lines Plataforma",
+        "X": -480,
+        "Y": 1430
+      },
+      {
+        "Id": "3fbc2cb6-cdfe-4c92-877e-3522597bbbcf",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Prefijo Superficie Plataforma",
+        "X": -480,
+        "Y": 1540
+      },
+      {
+        "Id": "cf7d58d5-4e45-4396-ae06-6e5998314f00",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Talud Corte H:V",
+        "X": -480,
+        "Y": 1650
+      },
+      {
+        "Id": "894df69e-d391-4207-ae22-75cd9044fbad",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Talud Relleno H:V",
+        "X": -480,
+        "Y": 1760
+      },
+      {
+        "Id": "56ae4a9c-6e11-470c-b005-9aac3b6447b0",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Capa Talud (corona/pie)",
+        "X": -480,
+        "Y": 1870
+      },
+      {
+        "Id": "d34c4314-fcf2-4d72-89a4-636e287322e2",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Bombeo calzada (%)",
+        "X": -480,
+        "Y": 1980
+      },
+      {
+        "Id": "7b7aaa52-c9e8-43eb-ba73-47f7bc0faf4e",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Crear Layout (S/N)",
+        "X": -480,
+        "Y": 2100
+      },
+      {
+        "Id": "1c71c4d0-48e4-4690-93b4-f2d57ff2dfc8",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Escala plano (1:N)",
+        "X": -480,
+        "Y": 2200
+      },
+      {
+        "Id": "e3c4906d-4574-4a67-99b4-1b03989d5b35",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Nombre Layout",
+        "X": -480,
+        "Y": 2300
+      },
+      {
+        "Id": "61fd43b8-6c28-4340-9622-7d69b0cbfa83",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Exageración vert. secciones",
+        "X": -480,
+        "Y": 2400
+      },
+      {
+        "Id": "c3bf6a04-2639-4784-8583-aea0f1342df5",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Y tabla volúmenes (m)",
+        "X": -480,
+        "Y": 2500
+      },
+      {
+        "Id": "bc0517fa-bc3f-43f3-99be-c50a5adcf5d8",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Y secciones transversales (m)",
+        "X": -480,
+        "Y": 2600
+      },
+      {
+        "Id": "23d4e38e-11f2-4f7a-82b2-1b30b16080e3",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Name": "PASO 8: Plano Final",
+        "X": 200,
+        "Y": 2300
       }
     ],
     "Annotations": [],
