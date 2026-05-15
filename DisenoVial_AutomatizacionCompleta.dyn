@@ -154,7 +154,7 @@
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "Id": "aa4e4bec-ebaf-4e71-ad50-12259ecf6f7a",
       "NodeType": "PythonScriptNode",
-      "Code": "# PASO 1: alineamiento NATIVO desde polilinea via PolylineOptions\n# (preserva arcos; metodo oficial Autodesk). Firma:\n# Alignment.Create(doc, PolylineOptions, name, siteName, layerName, styleName, labelSetName)\n# nombres como STRING; siteName=None -> sin sitio.\n# OUT = [ [alignment_id, ...], [log...] ]\nimport clr\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Alignment, PolylineOptions\n\nlayer_name = IN[0]\nali_base   = IN[1]\nDEST_LAYER = 'C-ROAD-CNTR'\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\nlogs = []\n\ndef ensure_layer(name):\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            lt = tr.GetObject(db.LayerTableId, OpenMode.ForRead)\n            if not lt.Has(name):\n                lt.UpgradeOpen()\n                ltr = LayerTableRecord(); ltr.Name = name\n                lt.Add(ltr); tr.AddNewlyCreatedDBObject(ltr, True)\n            tr.Commit()\n\ndef find_alignment(name):\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            for aid in cdoc.GetAlignmentIds():\n                a = tr.GetObject(aid, OpenMode.ForRead)\n                if a.Name.upper() == name.upper():\n                    tr.Commit(); return aid\n            tr.Commit()\n    return None\n\ndef delete_alignment(name):\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            for aid in cdoc.GetAlignmentIds():\n                a = tr.GetObject(aid, OpenMode.ForRead)\n                if a.Name.upper() == name.upper():\n                    a.UpgradeOpen(); a.Erase(); tr.Commit(); return\n            tr.Commit()\n\ndef length_of(oid):\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            try: L = tr.GetObject(oid, OpenMode.ForRead).Length\n            except: L = 0.0\n            tr.Commit()\n    return L\n\n# pares (estiloAlineamiento, conjuntoEtiquetas) para EN/ES\nSTYLES = [('Standard', 'Standard'),\n          (u'Est\\xe1ndar', u'Est\\xe1ndar'),\n          ('Standard', '_No Labels'),\n          (u'Est\\xe1ndar', u'_Sin etiquetas'),\n          ('Standard', None)]\n\ndef create_native(pid, name):\n    errs = []\n    for sN, lN in STYLES:\n        try:\n            plops = PolylineOptions()\n            plops.AddCurvesBetweenTangents = False\n            plops.EraseExistingEntities = False\n            plops.PlineId = pid\n            with doc.LockDocument():\n                aid = Alignment.Create(cdoc, plops, name, None, DEST_LAYER, sN, lN)\n            return aid, None\n        except Exception as e:\n            errs.append((sN or 'None') + '/' + (lN or 'None') + ':' + str(e))\n    return None, ' | '.join(errs)\n\ntry:\n    plines = []\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            bt  = tr.GetObject(db.BlockTableId, OpenMode.ForRead)\n            btr = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead)\n            for oid in btr:\n                o = tr.GetObject(oid, OpenMode.ForRead)\n                if isinstance(o, (Polyline, Polyline2d, Polyline3d)):\n                    plines.append(oid)\n            tr.Commit()\n\n    if not plines:\n        OUT = [[], [u'[ERROR P1] No hay ninguna polilinea en el modelo.']]\n    else:\n        logs.append(u'[INFO P1] Polilineas encontradas: ' + str(len(plines)))\n        ensure_layer(DEST_LAYER)\n        aids = []\n        one = len(plines) == 1\n        for k, pid in enumerate(plines):\n            name = ali_base if one else (ali_base + u'-%02d' % (k + 1))\n            Lp = length_of(pid)\n            existing = find_alignment(name)\n            if existing is not None:\n                La = length_of(existing)\n                d  = abs(Lp - La)\n                if Lp > 0 and d <= max(0.05, Lp * 0.002):\n                    aids.append(existing)\n                    logs.append(u'[OK P1] %s conservado (L=%.3f) -> preserva perfiles manuales.'\n                                % (name, La))\n                    continue\n                else:\n                    try: delete_alignment(name)\n                    except Exception as de: logs.append(u'[WARN P1] Borrado: ' + str(de))\n            aid, err = create_native(pid, name)\n            if aid is None:\n                logs.append(u'[WARN P1] ' + name + u': ' + err)\n                continue\n            aids.append(aid)\n            La = length_of(aid)\n            d  = abs(Lp - La)\n            est = u'OK' if (Lp > 0 and d <= max(0.05, Lp * 0.002)) else u'REVISAR'\n            logs.append(u'[OK P1] %s creado | L.poli=%.3f L.ali=%.3f dif=%.3f -> %s'\n                        % (name, Lp, La, d, est))\n        if not aids:\n            logs.append(u'[ERROR P1] Ninguna polilinea pudo convertirse en alineamiento.')\n        else:\n            logs.append(u'[INFO P1] Alineamientos creados: ' + str(len(aids)))\n        OUT = [aids, logs]\nexcept Exception as ex:\n    OUT = [[], logs + [u'[ERROR P1] Global: ' + str(ex)]]\n",
+      "Code": "# PASO 1: alineamiento NATIVO desde polilinea via PolylineOptions\n# (preserva arcos; metodo oficial Autodesk). Firma:\n# Alignment.Create(doc, PolylineOptions, name, siteName, layerName, styleName, labelSetName)\n# nombres como STRING; siteName=None -> sin sitio.\n# OUT = [ [alignment_id, ...], [log...] ]\nimport clr\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Alignment, PolylineOptions\n\nlayer_name = IN[0]\nali_base   = IN[1]\nforzar     = bool(IN[2]) if IN[2] is not None else False\nDEST_LAYER = 'C-ROAD-CNTR'\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\nlogs = []\n\ndef ensure_layer(name):\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            lt = tr.GetObject(db.LayerTableId, OpenMode.ForRead)\n            if not lt.Has(name):\n                lt.UpgradeOpen()\n                ltr = LayerTableRecord(); ltr.Name = name\n                lt.Add(ltr); tr.AddNewlyCreatedDBObject(ltr, True)\n            tr.Commit()\n\ndef find_alignment(name):\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            for aid in cdoc.GetAlignmentIds():\n                a = tr.GetObject(aid, OpenMode.ForRead)\n                if a.Name.upper() == name.upper():\n                    tr.Commit(); return aid\n            tr.Commit()\n    return None\n\ndef delete_alignment(name):\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            for aid in cdoc.GetAlignmentIds():\n                a = tr.GetObject(aid, OpenMode.ForRead)\n                if a.Name.upper() == name.upper():\n                    a.UpgradeOpen(); a.Erase(); tr.Commit(); return\n            tr.Commit()\n\ndef length_of(oid):\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            try: L = tr.GetObject(oid, OpenMode.ForRead).Length\n            except: L = 0.0\n            tr.Commit()\n    return L\n\n# pares (estiloAlineamiento, conjuntoEtiquetas) para EN/ES\nSTYLES = [('Standard', 'Standard'),\n          (u'Est\\xe1ndar', u'Est\\xe1ndar'),\n          ('Standard', '_No Labels'),\n          (u'Est\\xe1ndar', u'_Sin etiquetas'),\n          ('Standard', None)]\n\ndef create_native(pid, name):\n    errs = []\n    for sN, lN in STYLES:\n        try:\n            plops = PolylineOptions()\n            plops.AddCurvesBetweenTangents = False\n            plops.EraseExistingEntities = False\n            plops.PlineId = pid\n            with doc.LockDocument():\n                aid = Alignment.Create(cdoc, plops, name, None, DEST_LAYER, sN, lN)\n            return aid, None\n        except Exception as e:\n            errs.append((sN or 'None') + '/' + (lN or 'None') + ':' + str(e))\n    return None, ' | '.join(errs)\n\ntry:\n    plines = []\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            bt  = tr.GetObject(db.BlockTableId, OpenMode.ForRead)\n            btr = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead)\n            for oid in btr:\n                o = tr.GetObject(oid, OpenMode.ForRead)\n                if isinstance(o, (Polyline, Polyline2d, Polyline3d)):\n                    plines.append(oid)\n            tr.Commit()\n\n    if not plines:\n        OUT = [[], [u'[ERROR P1] No hay ninguna polilinea en el modelo.']]\n    else:\n        logs.append(u'[INFO P1] Polilineas encontradas: ' + str(len(plines)))\n        ensure_layer(DEST_LAYER)\n        aids = []\n        one = len(plines) == 1\n        for k, pid in enumerate(plines):\n            name = ali_base if one else (ali_base + u'-%02d' % (k + 1))\n            Lp = length_of(pid)\n            existing = find_alignment(name)\n            if existing is not None and not forzar:\n                # Conservar: la rasante manual dibujada en este alineamiento sobrevive.\n                aids.append(existing)\n                La = length_of(existing)\n                logs.append(u'[OK P1] %s conservado (L=%.3f). Para recrear poner Recrear=True.'\n                            % (name, La))\n                continue\n            elif existing is not None:\n                try: delete_alignment(name)\n                except Exception as de: logs.append(u'[WARN P1] Borrado: ' + str(de))\n            aid, err = create_native(pid, name)\n            if aid is None:\n                logs.append(u'[WARN P1] ' + name + u': ' + err)\n                continue\n            aids.append(aid)\n            La = length_of(aid)\n            d  = abs(Lp - La)\n            est = u'OK' if (Lp > 0 and d <= max(0.05, Lp * 0.002)) else u'REVISAR'\n            logs.append(u'[OK P1] %s creado | L.poli=%.3f L.ali=%.3f dif=%.3f -> %s'\n                        % (name, Lp, La, d, est))\n        if not aids:\n            logs.append(u'[ERROR P1] Ninguna polilinea pudo convertirse en alineamiento.')\n        else:\n            logs.append(u'[INFO P1] Alineamientos creados: ' + str(len(aids)))\n        OUT = [aids, logs]\nexcept Exception as ex:\n    OUT = [[], logs + [u'[ERROR P1] Global: ' + str(ex)]]\n",
       "Engine": "IronPython2",
       "VariableInputPorts": true,
       "Inputs": [
@@ -171,6 +171,15 @@
           "Id": "3a4b6566-7b75-4628-a9ed-226b95b753e7",
           "Name": "IN[1]",
           "Description": "Input #1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "9f8ecf69-5669-4eba-a798-5cf3097f95f4",
+          "Name": "IN[2]",
+          "Description": "Input #2",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -387,6 +396,26 @@
       ],
       "Replication": "Disabled",
       "Description": "Visualizes a node's output"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "Id": "f73c0283-ee27-40dd-a274-d63a3d4f5402",
+      "NodeType": "BooleanInputNode",
+      "InputValue": false,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "19d17012-2771-4ddf-bafe-05e0468a5428",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Recrear alineamientos (True=borrar y recrear / False=conservar existentes)"
     }
   ],
   "Connectors": [
@@ -472,6 +501,12 @@
       "Start": "5ba6ff1e-39cc-459c-babd-b397251c1b74",
       "End": "34af651f-715c-4a65-9d5e-93d26aca59ab",
       "Id": "2693bcbc-f803-4124-b7cb-fcf6b57133a1",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "19d17012-2771-4ddf-bafe-05e0468a5428",
+      "End": "9f8ecf69-5669-4eba-a798-5cf3097f95f4",
+      "Id": "55120bb0-859f-4955-84ad-a3b737840dfb",
       "IsHidden": "False"
     }
   ],
@@ -596,6 +631,16 @@
         "ShowGeometry": true,
         "X": 980,
         "Y": 400
+      },
+      {
+        "Name": "Recrear alineamientos (True/False)",
+        "ShowGeometry": true,
+        "Id": "f73c0283-ee27-40dd-a274-d63a3d4f5402",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 220.0,
+        "Y": 160.0
       }
     ],
     "Annotations": [],
