@@ -413,53 +413,58 @@
       "Id": "6f056a83-0fdd-4ddb-8fcc-4a4acff7d233",
       "Inputs": [
         {
-          "Id": "358fd695-0c9f-4cd9-a0ac-7ad19f775329",
+          "Id": "42c248f8-0d02-4c5f-87fd-a12c5903f97f",
           "Name": "IN[0]",
           "Description": "alignment_ids"
         },
         {
-          "Id": "6b9e2703-cb52-41cf-93e0-48ce91395afc",
+          "Id": "c1803fb8-f210-4e4f-9594-f7b4f6fb8c83",
           "Name": "IN[1]",
           "Description": "profile_name"
         },
         {
-          "Id": "6f31e89c-3119-45bb-a39e-29a365f19c9c",
+          "Id": "e19091bc-2259-475c-b8b1-b31905ce605a",
           "Name": "IN[2]",
           "Description": "surface_name"
         },
         {
-          "Id": "d4a01340-81df-4105-bca2-8686eb8487d7",
+          "Id": "18a9d886-aa25-44b8-824d-6a6bf9716908",
           "Name": "IN[3]",
           "Description": "platforms_json"
         },
         {
-          "Id": "815e2b7a-90d2-436f-a5f3-866a734a2a79",
+          "Id": "d73a90b6-ac63-4630-b892-5d21364ac585",
           "Name": "IN[4]",
           "Description": "kv"
         },
         {
-          "Id": "03cd3104-48b1-4385-b9cf-6dc9e0ae880b",
+          "Id": "2d1a498c-8f14-4069-8a17-4c645bc5b67c",
           "Name": "IN[5]",
           "Description": "road_half_width"
         },
         {
-          "Id": "5d6bfa86-4edc-4922-871a-93569498a0c5",
+          "Id": "c7d25949-80ce-4820-aefd-0fecc1deb406",
           "Name": "IN[6]",
-          "Description": "cross_slope_pct"
+          "Description": "cross_slope_road_pct"
         },
         {
-          "Id": "a3b59ac0-fd64-46d4-9d1a-838797baebfb",
+          "Id": "c5ad6e97-82fa-44ca-9177-d56c248812d8",
           "Name": "IN[7]",
+          "Description": "cross_slope_plt_pct"
+        },
+        {
+          "Id": "dddee85a-8b85-4492-90d1-b878a30a7df2",
+          "Name": "IN[8]",
           "Description": "section_spacing"
         },
         {
-          "Id": "d0aeff49-8e0d-46c3-badf-19c2bc3af027",
-          "Name": "IN[8]",
+          "Id": "d349314d-d680-4fab-bb89-3f23f15487c5",
+          "Name": "IN[9]",
           "Description": "cut_slope_hv"
         },
         {
-          "Id": "e63a95b4-ba03-4c50-a4ca-f109139b8442",
-          "Name": "IN[9]",
+          "Id": "1877673c-97a9-456e-ab9c-dd61f7ba7f9e",
+          "Name": "IN[10]",
           "Description": "fill_slope_hv"
         }
       ],
@@ -473,7 +478,7 @@
       "Replication": "Disabled",
       "Description": "Compensación de tierras + acuerdos KV=800",
       "Name": "PASO 6: Compensar Tierras KV=800",
-      "Code": "# PASO 6: Compensar movimiento de tierra + acuerdos KV\n# IN[0] alignment_ids    IN[1] profile_name    IN[2] surface_name\n# IN[3] platforms_json   IN[4] kv              IN[5] road_half_width\n# IN[6] cross_slope_pct  IN[7] section_spacing\n# IN[8] cut_slope_hv     IN[9] fill_slope_hv\n# OUT = [platforms_list, logs]\nimport clr, sys, json, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import OpenMode\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path: sys.path.insert(0, _p)\n\ntry:\n    from platforms import (Platform, compensate_earthwork_all,\n                           resolve_surface_id, resolve_profile_id,\n                           list_profile_names, KV_DEFAULT)\nexcept ImportError as ie:\n    OUT = [[], [\"ERROR: platforms.py no encontrado: %s\" % ie,\n                \"Copiar platforms.py en la misma carpeta que este .dyn\"]]\n    raise SystemExit(0)\n\nlogs = []\nalignment_ids = IN[0] if isinstance(IN[0], list) else [IN[0]]\nprofile_name  = str(IN[1]).strip()\nsurface_name  = str(IN[2]).strip()\nplatform_json = str(IN[3]).strip()\nkv            = float(IN[4]) if IN[4] is not None else KV_DEFAULT\nroad_hw       = float(IN[5]) if IN[5] is not None else 4.0\ncross_sl      = float(IN[6]) if IN[6] is not None else 2.5\nspacing       = float(IN[7]) if IN[7] is not None else 5.0\ncut_hv        = float(IN[8]) if IN[8] is not None else 1.0\nfill_hv       = float(IN[9]) if IN[9] is not None else 1.5\n\ntry:\n    surface_id = resolve_surface_id(surface_name)\n    logs.append(\"Superficie '%s' OK.\" % surface_name)\nexcept ValueError as ex:\n    OUT = [[], [str(ex)]]; raise SystemExit(0)\n\ntry:\n    defs = json.loads(platform_json)\nexcept Exception as ex:\n    OUT = [[], [\"ERROR JSON: %s\" % ex]]; raise SystemExit(0)\n\nplatforms = []\nfor item in defs:\n    try:\n        p = Platform(\n            name      = item['name'],\n            pk_start  = float(item['pk_start']),\n            pk_end    = float(item['pk_end']),\n            width     = float(item['width']),\n            side      = item.get('side', 'right'),\n            slope_pct = float(item.get('slope_pct', 2.0)),\n            elevation = item.get('elevation', None),\n            cut_hv    = float(item.get('cut_hv',  cut_hv)),\n            fill_hv   = float(item.get('fill_hv', fill_hv)),\n        )\n        platforms.append(p)\n        logs.append(\"OK: %s\" % p)\n    except Exception as ex:\n        logs.append(\"ERROR plataforma '%s': %s\" % (item.get('name','?'), ex))\n\nif not platforms:\n    OUT = [[], logs + [\"ERROR: Sin plataformas validas.\"]]; raise SystemExit(0)\n\nfor ali_id in alignment_ids:\n    profile_id = resolve_profile_id(ali_id, profile_name)\n    if profile_id is None:\n        logs.append(\"AVISO: rasante '%s' no encontrada. Disponibles: %s\"\n                    % (profile_name, list_profile_names(ali_id)))\n\n    results = compensate_earthwork_all(\n        surface_id, ali_id, platforms,\n        profile_id=profile_id, kv=kv,\n        road_half_width=road_hw, cross_slope_pct=cross_sl,\n        spacing=spacing, search_range=15.0,\n    )\n    for r in results:\n        logs.append(\n            \"[%(name)s] Z=%(optimal_elevation).3f m  \"\n            \"Corte=%(volume_cut).1f m3  Relleno=%(volume_fill).1f m3  \"\n            \"Balance=%(balance_m3)+.1f m3  \"\n            \"L_ent=%(L_entry).1f m  L_sal=%(L_exit).1f m\" % r\n        )\n        for w in r.get('warnings',[]): logs.append(\"  AVISO: \" + w)\n        for e in r.get('errors',  []): logs.append(\"  ERROR: \" + e)\n\nOUT = [platforms, logs]\n"
+      "Code": "# PASO 6: Compensar tierras (geometría exacta con taludes)\n# IN[0] alignment_ids   IN[1] profile_name    IN[2] surface_name\n# IN[3] platforms_json  IN[4] kv              IN[5] road_half_width\n# IN[6] cross_slope_road_pct   IN[7] cross_slope_plt_pct\n# IN[8] section_spacing  IN[9] cut_slope_hv   IN[10] fill_slope_hv\nimport clr, sys, json, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path: sys.path.insert(0, _p)\n\ntry:\n    from platforms import (Platform, compensate_earthwork_all,\n                           resolve_surface_id, resolve_profile_id,\n                           list_profile_names, KV_DEFAULT)\nexcept ImportError as ie:\n    OUT = [[], [\"ERROR: platforms.py no encontrado: %s\" % ie]]; raise SystemExit(0)\n\nlogs = []\nalignment_ids   = IN[0] if isinstance(IN[0], list) else [IN[0]]\nprofile_name    = str(IN[1]).strip()\nsurface_name    = str(IN[2]).strip()\nplatform_json   = str(IN[3]).strip()\nkv              = float(IN[4])  if IN[4]  is not None else KV_DEFAULT\nroad_hw         = float(IN[5])  if IN[5]  is not None else 4.0\ncross_sl_road   = float(IN[6])  if IN[6]  is not None else 2.5\ncross_sl_plt    = float(IN[7])  if IN[7]  is not None else 2.5\nspacing         = float(IN[8])  if IN[8]  is not None else 5.0\ncut_hv          = float(IN[9])  if IN[9]  is not None else 1.0\nfill_hv         = float(IN[10]) if IN[10] is not None else 1.5\n\ntry:\n    surface_id = resolve_surface_id(surface_name)\n    logs.append(\"Superficie '%s' OK.\" % surface_name)\nexcept ValueError as ex:\n    OUT = [[], [str(ex)]]; raise SystemExit(0)\n\ntry:\n    defs = json.loads(platform_json)\nexcept Exception as ex:\n    OUT = [[], [\"ERROR JSON: %s\" % ex]]; raise SystemExit(0)\n\nplatforms = []\nfor item in defs:\n    try:\n        p = Platform(\n            name             = item['name'],\n            pk_start         = float(item['pk_start']),\n            pk_end           = float(item['pk_end']),\n            width            = float(item['width']),\n            side             = item.get('side', 'right'),\n            slope_pct        = float(item.get('slope_pct', 2.0)),\n            elevation_offset = item.get('elevation_offset', None),\n            cut_hv           = float(item.get('cut_hv',  cut_hv)),\n            fill_hv          = float(item.get('fill_hv', fill_hv)),\n        )\n        platforms.append(p)\n        logs.append(\"OK: %s\" % p)\n    except Exception as ex:\n        logs.append(\"ERROR '%s': %s\" % (item.get('name','?'), ex))\n\nif not platforms:\n    OUT = [[], logs + [\"Sin plataformas validas.\"]]; raise SystemExit(0)\n\nfor ali_id in alignment_ids:\n    profile_id = resolve_profile_id(ali_id, profile_name)\n    if profile_id is None:\n        logs.append(\"AVISO: rasante '%s' no encontrada. Disponibles: %s\"\n                    % (profile_name, list_profile_names(ali_id)))\n        OUT = [[], logs]; raise SystemExit(0)\n\n    results = compensate_earthwork_all(\n        surface_id, ali_id, profile_id, platforms,\n        kv=kv, road_half_width=road_hw,\n        cross_slope_road_pct=cross_sl_road,\n        cross_slope_plt_pct=cross_sl_plt,\n        spacing=spacing, search_range=5.0,\n    )\n    for r in results:\n        logs.append(\n            \"[%(name)s] Dz=%(elevation_offset)+.3fm  \"\n            \"Corte=%(volume_cut).1f m3  Relleno=%(volume_fill).1f m3  \"\n            \"Balance=%(balance_m3)+.1f m3  \"\n            \"L_ent=%(L_entry).1f m  L_sal=%(L_exit).1f m\" % r\n        )\n        for w in r.get('warnings',[]): logs.append(\"  AVISO: \" + w)\n        for e in r.get('errors',  []): logs.append(\"  ERROR: \" + e)\n\nOUT = [platforms, logs]\n"
     },
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
@@ -483,68 +488,73 @@
       "Id": "dd65cf68-127f-4a38-9673-2b2166cd7459",
       "Inputs": [
         {
-          "Id": "c8a0b5ce-1e65-4046-aa9f-dff72130f6c9",
+          "Id": "f0f6eb2e-cd02-4bb2-9fa1-d4911781dfea",
           "Name": "IN[0]",
           "Description": "platforms"
         },
         {
-          "Id": "aa879fdd-aab3-422f-97f3-43a211eddf99",
+          "Id": "424ee6e3-5511-42b3-975e-987592223471",
           "Name": "IN[1]",
           "Description": "corridor_ids"
         },
         {
-          "Id": "82955de3-8456-4109-b8c8-60d3478f1139",
+          "Id": "1b9edf34-4824-4a41-bc2f-3413df6ff72c",
           "Name": "IN[2]",
           "Description": "alignment_ids"
         },
         {
-          "Id": "b5d05bd9-bd75-46ee-95f9-4441e8596e0e",
+          "Id": "d49e9fdf-8cb4-4e82-97da-0bf82dc991a8",
           "Name": "IN[3]",
           "Description": "profile_name"
         },
         {
-          "Id": "994b7515-f653-499d-9b60-818313fb6dff",
+          "Id": "c3c1f110-696d-4bf8-8061-10813914d8d7",
           "Name": "IN[4]",
           "Description": "asm_plataforma"
         },
         {
-          "Id": "345929dc-b5e8-4523-aa9a-0dc926c52440",
+          "Id": "ee16fd2d-9681-40ed-aee6-c63076991bdf",
           "Name": "IN[5]",
           "Description": "surface_name"
         },
         {
-          "Id": "1e19117f-3bf9-4137-b904-2e3e0fcbb5df",
+          "Id": "a3498ed6-b3e8-44d6-baf8-8d71a37b662b",
           "Name": "IN[6]",
           "Description": "kv"
         },
         {
-          "Id": "6d4cc655-25fe-4e65-95a1-165d3ad53472",
+          "Id": "eb7b5320-ff53-425a-af24-d9148b8be684",
           "Name": "IN[7]",
           "Description": "road_half_width"
         },
         {
-          "Id": "168d219f-df64-4612-9baa-33278187aaed",
+          "Id": "bd4d0f15-f255-44f0-9a7c-327e9961cbc5",
           "Name": "IN[8]",
-          "Description": "cross_slope_pct"
+          "Description": "cross_slope_road_pct"
         },
         {
-          "Id": "9979ee45-866e-4a93-a856-478b948aeb3e",
+          "Id": "89c8500c-641b-4e98-8fa5-5163c4c9099c",
           "Name": "IN[9]",
+          "Description": "cross_slope_plt_pct"
+        },
+        {
+          "Id": "86626ea9-9064-4798-af4b-5b0505d6bc45",
+          "Name": "IN[10]",
           "Description": "section_spacing"
         },
         {
-          "Id": "6661615b-c802-4ec7-844c-a150c5a5de70",
-          "Name": "IN[10]",
+          "Id": "8160f99c-d94e-4bbb-81e6-d736c17682c4",
+          "Name": "IN[11]",
           "Description": "layer_borde"
         },
         {
-          "Id": "38570a24-f65e-4d71-80e8-971dd515ef98",
-          "Name": "IN[11]",
+          "Id": "323f0e9d-66b1-4083-b698-e64fdaa709f9",
+          "Name": "IN[12]",
           "Description": "layer_talud"
         },
         {
-          "Id": "b1031329-6114-453b-8839-d3eb61466193",
-          "Name": "IN[12]",
+          "Id": "1ddafc19-9eb0-48e5-b653-b691eb2510de",
+          "Name": "IN[13]",
           "Description": "surface_prefix"
         }
       ],
@@ -558,7 +568,7 @@
       "Replication": "Disabled",
       "Description": "PIPs rasante + regiones corredor + feature lines + TIN plataforma",
       "Name": "PASO 7: Integrar Plataformas al Corredor",
-      "Code": "# PASO 7: Integrar Plataformas al Corredor\n# IN[0] platforms        IN[1] corridor_ids     IN[2] alignment_ids\n# IN[3] profile_name     IN[4] asm_plataforma   IN[5] surface_name\n# IN[6] kv               IN[7] road_half_width  IN[8] cross_slope_pct\n# IN[9] section_spacing  IN[10] layer_borde     IN[11] layer_talud\n# IN[12] surface_prefix\n# OUT = [platforms, logs]\nimport clr, sys, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path: sys.path.insert(0, _p)\n\ntry:\n    from platforms import (\n        add_platform_pips_to_profile, add_platform_regions_to_corridor,\n        create_platform_feature_lines, create_platform_tin_surface,\n        resolve_surface_id, resolve_profile_id, list_profile_names,\n        KV_DEFAULT, LAYER_BORDE, LAYER_TALUD,\n    )\nexcept ImportError as ie:\n    OUT = [[], [\"ERROR: platforms.py no encontrado: %s\" % ie]]; raise SystemExit(0)\n\nlogs = []\nplatforms     = IN[0]  if isinstance(IN[0],  list) else [IN[0]]\ncorridor_ids  = IN[1]  if isinstance(IN[1],  list) else [IN[1]]\nalignment_ids = IN[2]  if isinstance(IN[2],  list) else [IN[2]]\nprofile_name  = str(IN[3]).strip()\nasm_name      = str(IN[4]).strip()\nsurface_name  = str(IN[5]).strip()\nkv            = float(IN[6])  if IN[6]  is not None else KV_DEFAULT\nroad_hw       = float(IN[7])  if IN[7]  is not None else 4.0\ncross_sl      = float(IN[8])  if IN[8]  is not None else 2.5\nspacing       = float(IN[9])  if IN[9]  is not None else 5.0\nlayer_borde   = str(IN[10]).strip() if IN[10] is not None else LAYER_BORDE\nlayer_talud   = str(IN[11]).strip() if IN[11] is not None else LAYER_TALUD\nsurf_pfx      = str(IN[12]).strip() if IN[12] is not None else \"PLT\"\n\ntry:\n    surface_id = resolve_surface_id(surface_name)\nexcept ValueError as ex:\n    OUT = [[], [str(ex)]]; raise SystemExit(0)\n\nfor ali_id, cor_id in zip(alignment_ids, corridor_ids):\n    profile_id = resolve_profile_id(ali_id, profile_name)\n    if profile_id is None:\n        logs.append(\"AVISO: rasante '%s' no encontrada. Disponibles: %s\"\n                    % (profile_name, list_profile_names(ali_id)))\n    else:\n        logs += add_platform_pips_to_profile(ali_id, profile_id, platforms, kv)\n\n    logs += add_platform_regions_to_corridor(cor_id, ali_id, asm_name, platforms)\n\n    logs += create_platform_feature_lines(\n        surface_id, ali_id, platforms,\n        road_half_width=road_hw, cross_slope_pct=cross_sl,\n        layer_borde=layer_borde, layer_talud=layer_talud,\n        spacing=spacing,\n    )\n    logs += create_platform_tin_surface(\n        ali_id, platforms,\n        surface_name_prefix=surf_pfx,\n        road_half_width=road_hw,\n        cross_slope_pct=cross_sl,\n        spacing=spacing,\n    )\n\nlogs.append(\"PASO 7 completado.\")\nOUT = [platforms, logs]\n"
+      "Code": "# PASO 7: Integrar Plataformas al Corredor (FL + TIN + PIPs + Regiones)\n# IN[0] platforms          IN[1] corridor_ids      IN[2] alignment_ids\n# IN[3] profile_name       IN[4] asm_plataforma    IN[5] surface_name\n# IN[6] kv                 IN[7] road_half_width   IN[8] cross_slope_road_pct\n# IN[9] cross_slope_plt_pct   IN[10] section_spacing\n# IN[11] layer_borde       IN[12] layer_talud      IN[13] surface_prefix\nimport clr, sys, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path: sys.path.insert(0, _p)\n\ntry:\n    from platforms import (\n        add_platform_pips_to_profile, add_platform_regions_to_corridor,\n        create_platform_feature_lines, create_platform_tin_surface,\n        resolve_surface_id, resolve_profile_id, list_profile_names,\n        KV_DEFAULT, LAYER_BORDE, LAYER_TALUD,\n    )\nexcept ImportError as ie:\n    OUT = [[], [\"ERROR: platforms.py no encontrado: %s\" % ie]]; raise SystemExit(0)\n\nlogs          = []\nplatforms     = IN[0]  if isinstance(IN[0], list) else [IN[0]]\ncorridor_ids  = IN[1]  if isinstance(IN[1], list) else [IN[1]]\nalignment_ids = IN[2]  if isinstance(IN[2], list) else [IN[2]]\nprofile_name  = str(IN[3]).strip()\nasm_name      = str(IN[4]).strip()\nsurface_name  = str(IN[5]).strip()\nkv            = float(IN[6])  if IN[6]  is not None else KV_DEFAULT\nroad_hw       = float(IN[7])  if IN[7]  is not None else 4.0\ncross_sl_road = float(IN[8])  if IN[8]  is not None else 2.5\ncross_sl_plt  = float(IN[9])  if IN[9]  is not None else 2.5\nspacing       = float(IN[10]) if IN[10] is not None else 5.0\nlayer_borde   = str(IN[11]).strip() if IN[11] is not None else LAYER_BORDE\nlayer_talud   = str(IN[12]).strip() if IN[12] is not None else LAYER_TALUD\nsurf_pfx      = str(IN[13]).strip() if IN[13] is not None else \"PLT\"\n\ntry:\n    surface_id = resolve_surface_id(surface_name)\nexcept ValueError as ex:\n    OUT = [[], [str(ex)]]; raise SystemExit(0)\n\nfor ali_id, cor_id in zip(alignment_ids, corridor_ids):\n    profile_id = resolve_profile_id(ali_id, profile_name)\n    if profile_id is None:\n        logs.append(\"AVISO: rasante '%s' no encontrada. Disponibles: %s\"\n                    % (profile_name, list_profile_names(ali_id)))\n        continue\n\n    logs += add_platform_pips_to_profile(ali_id, profile_id, platforms, kv)\n    logs += add_platform_regions_to_corridor(cor_id, ali_id, asm_name, platforms)\n    logs += create_platform_feature_lines(\n        surface_id, ali_id, profile_id, platforms,\n        road_half_width=road_hw,\n        cross_slope_road_pct=cross_sl_road,\n        cross_slope_plt_pct=cross_sl_plt,\n        layer_borde=layer_borde, layer_talud=layer_talud,\n        spacing=spacing,\n    )\n    logs += create_platform_tin_surface(\n        ali_id, profile_id, platforms,\n        surface_name_prefix=surf_pfx,\n        road_half_width=road_hw,\n        cross_slope_road_pct=cross_sl_road,\n        cross_slope_plt_pct=cross_sl_plt,\n        spacing=spacing,\n    )\n\nlogs.append(\"PASO 7 completado.\")\nOUT = [platforms, logs]\n"
     },
     {
       "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
@@ -720,6 +730,23 @@
       "Outputs": [
         {
           "Id": "7645c6a8-3bb9-476b-af89-41e7a6daaea4",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "d34c4314-fcf2-4d72-89a4-636e287322e2",
+      "Name": "Bombeo calzada (%)",
+      "Description": "Pendiente transversal de la calzada (%)",
+      "InputValue": 2.5,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "c7d05b9b-4adf-469a-a463-f2f5337cfee6",
           "Name": "",
           "Description": ""
         }
@@ -1038,6 +1065,14 @@
         "Name": "Capa Talud (corona/pie)",
         "X": -480,
         "Y": 1870
+      },
+      {
+        "Id": "d34c4314-fcf2-4d72-89a4-636e287322e2",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Bombeo calzada (%)",
+        "X": -480,
+        "Y": 1980
       }
     ],
     "Annotations": [],
