@@ -1,5 +1,5 @@
 {
-  "Uuid": "9c66aeb2-e54f-4fa0-91ce-9b860fad2855",
+  "Uuid": "9fd718bf-1fae-4770-a7da-dff61029cf7f",
   "IsCustomNode": false,
   "Description": "Automatizacion diseno vial Civil 3D 2026",
   "Name": "DisenoVial_AutomatizacionCompleta",
@@ -11,14 +11,14 @@
   "Nodes": [
     {
       "ConcreteType": "CoreNodeModels.Input.DoubleInput, CoreNodeModels",
-      "Id": "ef2c8dfb-37b4-4579-bb6c-7e8c33e580ca",
+      "Id": "9c7f1ce5-6718-4c82-a3a9-9ca6e3812296",
       "NodeType": "NumberInputNode",
       "NumberType": "Double",
       "InputValue": 0.3,
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "2f4c6f09-c297-4313-a8b6-c522ca0f7c06",
+          "Id": "5fa3d254-9e79-4205-a2d0-1bb039dabcb9",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -32,13 +32,13 @@
     },
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
-      "Id": "125d0e03-99c2-4573-9f9f-0e968a3bb272",
+      "Id": "f4e94a00-cedb-49f0-ae10-02c75cb4214e",
       "NodeType": "StringInputNode",
       "InputValue": "EJE DE CAMINO",
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "b0030c09-8fd8-4c02-b2cb-1befc1b318c9",
+          "Id": "157bc14a-8cfc-4ae9-99e3-c15494a91c41",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -52,13 +52,13 @@
     },
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
-      "Id": "7aa0e35e-be42-47a4-ad2a-8aab881a9342",
+      "Id": "1849e4a3-1fc6-48b1-a4e4-3398b1131dae",
       "NodeType": "StringInputNode",
       "InputValue": "TN",
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "2080eb4b-53d3-4659-85ce-90a34cfcf1aa",
+          "Id": "f8c94f88-f83e-4911-9b3e-82372b1503e4",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -72,13 +72,13 @@
     },
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
-      "Id": "4e9edf48-a59b-4280-acb9-9e7ce6b0d2a6",
+      "Id": "92413f92-c595-4181-856c-fadb4ef1a112",
       "NodeType": "StringInputNode",
       "InputValue": "SELLO",
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "52b18bbb-539a-4c4d-8e8b-912c0c250503",
+          "Id": "e6152f9c-4b77-4e0a-9270-73d4afde9e08",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -92,13 +92,13 @@
     },
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
-      "Id": "79570092-99ad-4d2f-972c-9b736683f496",
+      "Id": "733ed817-8af2-45fd-8cb2-79fe737657f1",
       "NodeType": "StringInputNode",
       "InputValue": "ALI-EJE",
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "e8d6000b-7ca2-42e9-853d-179d317e373c",
+          "Id": "c1bb50f3-629b-4aec-b46a-5d4a01a017eb",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -112,13 +112,13 @@
     },
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
-      "Id": "707a2ca3-3a8f-4c2c-af1f-40cc9dae799b",
+      "Id": "8427d9df-7df8-47f1-8568-3923e0a9826d",
       "NodeType": "StringInputNode",
       "InputValue": "RASANTE",
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "a420330f-1b6d-4507-9369-ff910a79fc9e",
+          "Id": "6f402338-6e0c-4ca0-90d9-93f10ac159ac",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -132,13 +132,13 @@
     },
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
-      "Id": "1dc4fd27-ddeb-4145-a895-82ea39411b33",
+      "Id": "4dd380a1-cca4-45b8-be02-0dc5d136efd3",
       "NodeType": "StringInputNode",
       "InputValue": "camino",
       "Inputs": [],
       "Outputs": [
         {
-          "Id": "441e92e1-5f14-4bde-b300-bbd00e8568ef",
+          "Id": "c10ed04a-2093-4fab-bd49-9b8d54c15ff1",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -152,14 +152,14 @@
     },
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
-      "Id": "42a9e8c0-14dd-4299-a479-e2fceb2d2a9a",
+      "Id": "aa4e4bec-ebaf-4e71-ad50-12259ecf6f7a",
       "NodeType": "PythonScriptNode",
-      "Code": "# PASO 1: Alineamiento desde polilinea en capa \"EJE DE CAMINO\"\n# Requiere paquete DynamoIronPython2.7. Salida unica: OUT = [alignment_id, log]\nimport clr, math\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Alignment\n\nlayer_name = IN[0]\nali_name   = IN[1]\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef norm(s):\n    import unicodedata\n    return ''.join(c for c in unicodedata.normalize('NFD', unicode(s))\n                   if unicodedata.category(c) != 'Mn').upper()\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n    return ObjectId.Null\n\ntry:\n    tgt = norm(layer_name)\n    pid = None\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            bt  = tr.GetObject(db.BlockTableId, OpenMode.ForRead)\n            btr = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead)\n            for oid in btr:\n                obj = tr.GetObject(oid, OpenMode.ForRead)\n                if norm(obj.Layer) == tgt and isinstance(obj, (Polyline, Polyline2d, Polyline3d)):\n                    pid = oid; break\n            tr.Commit()\n    if pid is None:\n        raise ValueError(u'No se encontro polilinea en la capa: ' + layer_name)\n    ast = sty(cdoc.Styles.AlignmentStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n    lst = sty(cdoc.Styles.LabelSetStyles.AlignmentLabelSetStyles, 'Standard', '_No Labels')\n    aid, log = None, ''\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            try:\n                aid = Alignment.CreateFromPolyline(cdoc, ali_name, ObjectId.Null,\n                          pid, 'C-ROAD-CNTR', ast, lst, False, True)\n                log = u'[OK] Alineamiento creado (arcos preservados).'\n                tr.Commit()\n            except Exception as e:\n                tr.Abort()\n                log = u'[WARN] CreateFromPolyline fallo: ' + str(e) + u' -> manual.'\n                with doc.LockDocument():\n                    with db.TransactionManager.StartTransaction() as t2:\n                        pl = t2.GetObject(pid, OpenMode.ForRead)\n                        aid = Alignment.Create(cdoc, ali_name, ObjectId.Null,\n                                               'C-ROAD-CNTR', ast, lst)\n                        ents = t2.GetObject(aid, OpenMode.ForWrite).Entities\n                        nv = pl.NumberOfVertices\n                        rng = range(nv) if pl.Closed else range(nv - 1)\n                        for i in rng:\n                            j = (i + 1) % nv\n                            p1 = pl.GetPoint3dAt(i); p2 = pl.GetPoint3dAt(j)\n                            bv = pl.GetBulgeAt(i)\n                            if abs(bv) < 1e-12:\n                                ents.AddFixedLine(Point3d(p1.X,p1.Y,0.0),\n                                                  Point3d(p2.X,p2.Y,0.0))\n                            else:\n                                t = 4.0*math.atan(abs(bv))\n                                d = math.sqrt((p2.X-p1.X)**2+(p2.Y-p1.Y)**2)\n                                r = d/(2.0*math.sin(t/2.0))\n                                mx,my = (p1.X+p2.X)/2.0,(p1.Y+p2.Y)/2.0\n                                dm = math.sqrt(max(0.0, r*r-(d/2.0)**2))\n                                ca = math.atan2(p2.Y-p1.Y, p2.X-p1.X)\n                                cw = bv < 0\n                                pp = ca + (math.pi/2.0 if not cw else -math.pi/2.0)\n                                c = Point3d(mx+dm*math.cos(pp), my+dm*math.sin(pp), 0.0)\n                                sa = math.atan2(p1.Y-c.Y, p1.X-c.X)\n                                ea = math.atan2(p2.Y-c.Y, p2.X-c.X)\n                                ents.AddFixedArc(c, r, sa, ea, cw)\n                        t2.Commit()\n                        log += u' Alineamiento manual OK.'\n    OUT = [aid, log]\nexcept Exception as ex:\n    OUT = [None, u'[ERROR P1] ' + str(ex)]\n",
+      "Code": "# PASO 1: Alineamiento desde polilinea en capa \"EJE DE CAMINO\"\n# OUT = [alignment_id, [log...]]   (log es LISTA acumulable)\nimport clr, math\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Alignment\n\nlayer_name = IN[0]\nali_name   = IN[1]\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef norm(s):\n    import unicodedata\n    return ''.join(c for c in unicodedata.normalize('NFD', unicode(s))\n                   if unicodedata.category(c) != 'Mn').upper()\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n    return ObjectId.Null\n\ntry:\n    tgt = norm(layer_name)\n    pid = None\n    nfound = 0\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            bt  = tr.GetObject(db.BlockTableId, OpenMode.ForRead)\n            btr = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead)\n            for oid in btr:\n                obj = tr.GetObject(oid, OpenMode.ForRead)\n                if isinstance(obj, (Polyline, Polyline2d, Polyline3d)):\n                    nfound += 1\n                    if norm(obj.Layer) == tgt:\n                        pid = oid; break\n            tr.Commit()\n    if pid is None:\n        raise ValueError(u\"Sin polilinea en capa '\" + layer_name +\n                         u\"' (polilineas totales en modelo: \" + str(nfound) + u\")\")\n    ast = sty(cdoc.Styles.AlignmentStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n    lst = sty(cdoc.Styles.LabelSetStyles.AlignmentLabelSetStyles, 'Standard', '_No Labels')\n    aid = None\n    msg = u''\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            try:\n                aid = Alignment.CreateFromPolyline(cdoc, ali_name, ObjectId.Null,\n                          pid, 'C-ROAD-CNTR', ast, lst, False, True)\n                msg = u'[OK P1] Alineamiento creado (arcos preservados).'\n                tr.Commit()\n            except Exception as e:\n                tr.Abort()\n                msg = u'[WARN P1] CreateFromPolyline fallo: ' + str(e) + u' -> manual.'\n                with doc.LockDocument():\n                    with db.TransactionManager.StartTransaction() as t2:\n                        pl = t2.GetObject(pid, OpenMode.ForRead)\n                        aid = Alignment.Create(cdoc, ali_name, ObjectId.Null,\n                                               'C-ROAD-CNTR', ast, lst)\n                        ents = t2.GetObject(aid, OpenMode.ForWrite).Entities\n                        nv = pl.NumberOfVertices\n                        rng = range(nv) if pl.Closed else range(nv - 1)\n                        for i in rng:\n                            j = (i + 1) % nv\n                            p1 = pl.GetPoint3dAt(i); p2 = pl.GetPoint3dAt(j)\n                            bv = pl.GetBulgeAt(i)\n                            if abs(bv) < 1e-12:\n                                ents.AddFixedLine(Point3d(p1.X,p1.Y,0.0),\n                                                  Point3d(p2.X,p2.Y,0.0))\n                            else:\n                                t = 4.0*math.atan(abs(bv))\n                                d = math.sqrt((p2.X-p1.X)**2+(p2.Y-p1.Y)**2)\n                                r = d/(2.0*math.sin(t/2.0))\n                                mx,my = (p1.X+p2.X)/2.0,(p1.Y+p2.Y)/2.0\n                                dm = math.sqrt(max(0.0, r*r-(d/2.0)**2))\n                                ca = math.atan2(p2.Y-p1.Y, p2.X-p1.X)\n                                cw = bv < 0\n                                pp = ca + (math.pi/2.0 if not cw else -math.pi/2.0)\n                                c = Point3d(mx+dm*math.cos(pp), my+dm*math.sin(pp), 0.0)\n                                sa = math.atan2(p1.Y-c.Y, p1.X-c.X)\n                                ea = math.atan2(p2.Y-c.Y, p2.X-c.X)\n                                ents.AddFixedArc(c, r, sa, ea, cw)\n                        t2.Commit()\n                        msg += u' Alineamiento manual OK.'\n    OUT = [aid, [msg]]\nexcept Exception as ex:\n    OUT = [None, [u'[ERROR P1] ' + str(ex)]]\n",
       "Engine": "IronPython2",
       "VariableInputPorts": true,
       "Inputs": [
         {
-          "Id": "89ba3854-9bd6-4574-a8ed-5b6ca09792fc",
+          "Id": "1134656e-778c-4305-b598-77763fec3480",
           "Name": "IN[0]",
           "Description": "Input #0",
           "UsingDefaultValue": false,
@@ -168,7 +168,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "778d2cf1-a378-49e5-b0d3-e455135387e0",
+          "Id": "3a4b6566-7b75-4628-a9ed-226b95b753e7",
           "Name": "IN[1]",
           "Description": "Input #1",
           "UsingDefaultValue": false,
@@ -179,7 +179,7 @@
       ],
       "Outputs": [
         {
-          "Id": "5da5bcd1-613d-4e70-a48d-d0b18efff20d",
+          "Id": "316f3e53-45ee-45ce-81e5-ee6a42929941",
           "Name": "OUT",
           "Description": "",
           "UsingDefaultValue": false,
@@ -193,14 +193,14 @@
     },
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
-      "Id": "805aa8bc-9986-4bc4-9ac2-37c3e9cb4291",
+      "Id": "99ff3ad8-61e2-4439-bf6a-1dcc98e9d5d0",
       "NodeType": "PythonScriptNode",
-      "Code": "# PASO 2: SELLO = TN - delta\n# IN[0]=tn_name IN[1]=sello_name IN[2]=delta IN[3]=salida_PASO1 (lista)\n# Salida unica: OUT = [sello_id, tn_id, log]\nimport clr\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d, Point3dCollection\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import TinSurface\n\ntn_name    = IN[0]\nsello_name = IN[1]\ndelta      = float(IN[2])\np1 = IN[3]  # [alignment_id, log] del PASO 1 (solo fuerza orden)\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef find_surf(name):\n    for sid in cdoc.GetSurfaceIds():\n        with db.TransactionManager.StartTransaction() as tr:\n            s = tr.GetObject(sid, OpenMode.ForRead); tr.Commit()\n            if s.Name.upper() == name.upper(): return sid\n    return None\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n    return ObjectId.Null\n\ntry:\n    if p1 is None or p1[0] is None:\n        raise ValueError(u'PASO 1 no entrego alineamiento. Revisar PASO 1.')\n    tn_id = find_surf(tn_name)\n    if tn_id is None:\n        raise ValueError(u'Superficie TN no encontrada: ' + tn_name)\n    ex = find_surf(sello_name)\n    if ex is not None:\n        with doc.LockDocument():\n            with db.TransactionManager.StartTransaction() as tr:\n                tr.GetObject(ex, OpenMode.ForWrite).Erase(); tr.Commit()\n    st = sty(cdoc.Styles.SurfaceStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            tn  = tr.GetObject(tn_id, OpenMode.ForRead)\n            pts = Point3dCollection()\n            for v in tn.Vertices:\n                L = v.Location\n                pts.Add(Point3d(L.X, L.Y, L.Z - delta))\n            sid = TinSurface.Create(cdoc, sello_name)\n            srf = tr.GetObject(sid, OpenMode.ForWrite)\n            if st != ObjectId.Null: srf.StyleId = st\n            srf.AddVertices(pts)\n            srf.Rebuild()\n            tr.Commit()\n    OUT = [sid, tn_id, u'[OK] SELLO = TN - %.3f m (%d vertices)' % (delta, pts.Count)]\nexcept Exception as ex:\n    OUT = [None, None, u'[ERROR P2] ' + str(ex)]\n",
+      "Code": "# PASO 2: SELLO = TN - delta\n# IN[0]=tn IN[1]=sello IN[2]=delta IN[3]=salida_P1 [aid,[logs]]\n# OUT = [sello_id, tn_id, logs_acumulados]\nimport clr\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d, Point3dCollection\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import TinSurface\n\ntn_name    = IN[0]\nsello_name = IN[1]\ndelta      = float(IN[2])\np1 = IN[3]\nlogs = list(p1[1]) if (p1 and len(p1) > 1 and p1[1]) else []\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef find_surf(name):\n    for sid in cdoc.GetSurfaceIds():\n        with db.TransactionManager.StartTransaction() as tr:\n            s = tr.GetObject(sid, OpenMode.ForRead); tr.Commit()\n            if s.Name.upper() == name.upper(): return sid\n    return None\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n    return ObjectId.Null\n\ntry:\n    if p1 is None or p1[0] is None:\n        OUT = [None, None, logs + [u'[SKIP P2] PASO 1 sin alineamiento.']]\n    else:\n        tn_id = find_surf(tn_name)\n        if tn_id is None:\n            raise ValueError(u'Superficie TN no encontrada: ' + tn_name)\n        ex = find_surf(sello_name)\n        if ex is not None:\n            with doc.LockDocument():\n                with db.TransactionManager.StartTransaction() as tr:\n                    tr.GetObject(ex, OpenMode.ForWrite).Erase(); tr.Commit()\n        st = sty(cdoc.Styles.SurfaceStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n        with doc.LockDocument():\n            with db.TransactionManager.StartTransaction() as tr:\n                tn  = tr.GetObject(tn_id, OpenMode.ForRead)\n                pts = Point3dCollection()\n                for v in tn.Vertices:\n                    L = v.Location\n                    pts.Add(Point3d(L.X, L.Y, L.Z - delta))\n                sid = TinSurface.Create(cdoc, sello_name)\n                srf = tr.GetObject(sid, OpenMode.ForWrite)\n                if st != ObjectId.Null: srf.StyleId = st\n                srf.AddVertices(pts)\n                srf.Rebuild()\n                tr.Commit()\n        logs.append(u'[OK P2] SELLO = TN - %.3f m (%d vert.)' % (delta, pts.Count))\n        OUT = [sid, tn_id, logs]\nexcept Exception as ex:\n    OUT = [None, None, logs + [u'[ERROR P2] ' + str(ex)]]\n",
       "Engine": "IronPython2",
       "VariableInputPorts": true,
       "Inputs": [
         {
-          "Id": "2b8ed556-5d1f-49a3-ab51-16404a7a346f",
+          "Id": "1e107ec8-2dfd-4069-849c-5e7aa7ec06e5",
           "Name": "IN[0]",
           "Description": "Input #0",
           "UsingDefaultValue": false,
@@ -209,7 +209,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "c4a7f508-3b84-4a07-b0c0-2d21b1441f4f",
+          "Id": "79443d39-8aa8-415d-9693-6ba2fec66dd2",
           "Name": "IN[1]",
           "Description": "Input #1",
           "UsingDefaultValue": false,
@@ -218,7 +218,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "8e719d1c-1c18-45b5-8357-7b44e4a1a9ee",
+          "Id": "d1d2973d-d1ee-491e-8cb9-3c77d1c90e07",
           "Name": "IN[2]",
           "Description": "Input #2",
           "UsingDefaultValue": false,
@@ -227,7 +227,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "eadeebc3-b6f3-4793-83f8-88a8f0f99808",
+          "Id": "56ca0abe-ed47-4330-a7a2-8612e5dc9ee8",
           "Name": "IN[3]",
           "Description": "Input #3",
           "UsingDefaultValue": false,
@@ -238,7 +238,7 @@
       ],
       "Outputs": [
         {
-          "Id": "6cb9cc6a-db7d-49be-8b05-5b265e9d51d7",
+          "Id": "1a88c82c-3f40-41bd-84d8-e1f9f6b0a0a2",
           "Name": "OUT",
           "Description": "",
           "UsingDefaultValue": false,
@@ -252,14 +252,14 @@
     },
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
-      "Id": "1676c159-27f1-459d-a5bf-d496b92019fe",
+      "Id": "93d37704-1856-4d56-867b-32fcf1bbab16",
       "NodeType": "PythonScriptNode",
-      "Code": "# PASO 3: Vista de perfil con TN y SELLO\n# IN[0]=salida_PASO1 IN[1]=salida_PASO2 ; OUT = [profile_view_id, log]\nimport clr\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Profile, ProfileView\n\np1 = IN[0]   # [alignment_id, log]\np2 = IN[1]   # [sello_id, tn_id, log]\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n    return ObjectId.Null\n\ndef surf_profile(tr, ali_id, surf_id, name, layer_oid):\n    ali = tr.GetObject(ali_id, OpenMode.ForRead)\n    for pid in ali.GetProfileIds():\n        if tr.GetObject(pid, OpenMode.ForRead).Name == name:\n            return pid\n    ps = sty(cdoc.Styles.ProfileStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n    ls = sty(cdoc.Styles.LabelSetStyles.ProfileLabelSetStyles, '_No Labels', 'Standard')\n    return Profile.CreateFromSurface(name, ali_id, surf_id, layer_oid, ps, ls)\n\ntry:\n    if p1 is None or p1[0] is None:\n        raise ValueError(u'PASO 1 sin alineamiento.')\n    if p2 is None or p2[0] is None:\n        raise ValueError(u'PASO 2 sin superficie SELLO.')\n    alignment_id = p1[0]\n    sello_id     = p2[0]\n    tn_id        = p2[1]\n    pvs = sty(cdoc.Styles.ProfileViewStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n            ext = ali.GeometricExtents\n            ins = Point3d(ext.MaxPoint.X + 150.0, ext.MinPoint.Y, 0.0)\n            cl  = db.Clayer\n            surf_profile(tr, alignment_id, tn_id,    u'PERF-TN',    cl)\n            surf_profile(tr, alignment_id, sello_id, u'PERF-SELLO', cl)\n            pv_id = ProfileView.Create(alignment_id, ins)\n            pv = tr.GetObject(pv_id, OpenMode.ForWrite)\n            pv.Name = u'PV-EJE'\n            if pvs != ObjectId.Null: pv.StyleId = pvs\n            tr.Commit()\n    OUT = [pv_id, u'[OK] Vista de perfil PV-EJE con TN y SELLO.']\nexcept Exception as ex:\n    OUT = [None, u'[ERROR P3] ' + str(ex)]\n",
+      "Code": "# PASO 3: Vista de perfil con TN y SELLO\n# IN[0]=salida_P1 IN[1]=salida_P2 ; OUT=[pv_id, logs_acumulados]\nimport clr\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Profile, ProfileView\n\np1 = IN[0]\np2 = IN[1]\nlogs = list(p2[2]) if (p2 and len(p2) > 2 and p2[2]) else []\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n    return ObjectId.Null\n\ndef surf_profile(tr, ali_id, surf_id, name, layer_oid):\n    ali = tr.GetObject(ali_id, OpenMode.ForRead)\n    for pid in ali.GetProfileIds():\n        if tr.GetObject(pid, OpenMode.ForRead).Name == name:\n            return pid\n    ps = sty(cdoc.Styles.ProfileStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n    ls = sty(cdoc.Styles.LabelSetStyles.ProfileLabelSetStyles, '_No Labels', 'Standard')\n    return Profile.CreateFromSurface(name, ali_id, surf_id, layer_oid, ps, ls)\n\ntry:\n    if p1 is None or p1[0] is None:\n        OUT = [None, logs + [u'[SKIP P3] PASO 1 sin alineamiento.']]\n    elif p2 is None or p2[0] is None:\n        OUT = [None, logs + [u'[SKIP P3] PASO 2 sin SELLO.']]\n    else:\n        alignment_id = p1[0]\n        sello_id     = p2[0]\n        tn_id        = p2[1]\n        pvs = sty(cdoc.Styles.ProfileViewStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n        with doc.LockDocument():\n            with db.TransactionManager.StartTransaction() as tr:\n                ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n                ext = ali.GeometricExtents\n                ins = Point3d(ext.MaxPoint.X + 150.0, ext.MinPoint.Y, 0.0)\n                cl  = db.Clayer\n                surf_profile(tr, alignment_id, tn_id,    u'PERF-TN',    cl)\n                surf_profile(tr, alignment_id, sello_id, u'PERF-SELLO', cl)\n                pv_id = ProfileView.Create(alignment_id, ins)\n                pv = tr.GetObject(pv_id, OpenMode.ForWrite)\n                pv.Name = u'PV-EJE'\n                if pvs != ObjectId.Null: pv.StyleId = pvs\n                tr.Commit()\n        logs.append(u'[OK P3] Vista de perfil PV-EJE con TN y SELLO.')\n        OUT = [pv_id, logs]\nexcept Exception as ex:\n    OUT = [None, logs + [u'[ERROR P3] ' + str(ex)]]\n",
       "Engine": "IronPython2",
       "VariableInputPorts": true,
       "Inputs": [
         {
-          "Id": "245a4da0-7b5c-42db-96ac-f3abe9117b5a",
+          "Id": "1aa36779-62a1-436f-b8e6-a72f47c3ec80",
           "Name": "IN[0]",
           "Description": "Input #0",
           "UsingDefaultValue": false,
@@ -268,7 +268,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "9c384b6e-1606-49ed-ab57-c027f40e2642",
+          "Id": "32e19903-feac-48fc-b769-1b2f07283445",
           "Name": "IN[1]",
           "Description": "Input #1",
           "UsingDefaultValue": false,
@@ -279,7 +279,7 @@
       ],
       "Outputs": [
         {
-          "Id": "818c9fe2-c0ee-4fb7-9f57-17b9e8e64c8b",
+          "Id": "58efe0fb-fe89-476b-9a55-3be66e478976",
           "Name": "OUT",
           "Description": "",
           "UsingDefaultValue": false,
@@ -293,14 +293,14 @@
     },
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
-      "Id": "1c5116ca-7778-4cd8-9e8e-b8d62c4fe198",
+      "Id": "706a5ba3-a391-4400-9c40-836fc13a185b",
       "NodeType": "PythonScriptNode",
-      "Code": "# PASO 4: Corredor con rasante existente y assembly \"camino\"\n# IN[0]=salida_PASO1 IN[1]=profile_name IN[2]=assembly_name\n# IN[3]=salida_PASO2 IN[4]=salida_PASO3 ; OUT = [corridor_id, log]\nimport clr\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Corridor\n\np1 = IN[0]\nprofile_name  = IN[1]\nassembly_name = IN[2]\np2 = IN[3]\np3 = IN[4]\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n    return ObjectId.Null\n\ndef find_profile(ali_id, name):\n    with db.TransactionManager.StartTransaction() as tr:\n        ali = tr.GetObject(ali_id, OpenMode.ForRead)\n        found, names = None, []\n        for pid in ali.GetProfileIds():\n            p = tr.GetObject(pid, OpenMode.ForRead)\n            names.append(p.Name)\n            if p.Name.upper() == name.upper(): found = pid\n        tr.Commit()\n    return found, names\n\ndef find_assembly(name):\n    import unicodedata\n    def n(s):\n        return ''.join(c for c in unicodedata.normalize('NFD', unicode(s))\n                       if unicodedata.category(c) != 'Mn').upper()\n    tgt = n(name)\n    with db.TransactionManager.StartTransaction() as tr:\n        for aid in cdoc.GetAssemblyIds():\n            if n(tr.GetObject(aid, OpenMode.ForRead).Name) == tgt:\n                tr.Commit(); return aid\n        tr.Commit()\n    return None\n\ntry:\n    if p1 is None or p1[0] is None:\n        raise ValueError(u'PASO 1 sin alineamiento.')\n    if p3 is None or p3[0] is None:\n        raise ValueError(u'PASO 3 sin vista de perfil.')\n    alignment_id = p1[0]\n    prof_id, avail = find_profile(alignment_id, profile_name)\n    if prof_id is None:\n        raise ValueError(u'Rasante no encontrada: ' + profile_name +\n                         u'. Disponibles: ' + str(avail))\n    asm_id = find_assembly(assembly_name)\n    if asm_id is None:\n        raise ValueError(u'Assembly no encontrado: ' + assembly_name)\n    cst = sty(cdoc.Styles.CorridorStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n            s0, s1 = ali.StartingStation, ali.EndingStation\n            cor_id = Corridor.Create(cdoc, u'CORREDOR-EJE')\n            cor = tr.GetObject(cor_id, OpenMode.ForWrite)\n            if cst != ObjectId.Null: cor.StyleId = cst\n            bl  = cor.Baselines.Add(u'BL-EJE', alignment_id, prof_id)\n            reg = bl.BaselineRegions.Add(u'REG-1', asm_id)\n            try:\n                reg.StartStation = s0\n                reg.EndStation   = s1\n            except: pass\n            cor.Rebuild()\n            tr.Commit()\n    OUT = [cor_id, u'[OK] Corredor: assembly=' + assembly_name +\n           u', rasante=' + profile_name]\nexcept Exception as ex:\n    OUT = [None, u'[ERROR P4] ' + str(ex)]\n",
+      "Code": "# PASO 4: Corredor con rasante existente y assembly \"camino\"\n# IN[0]=salida_P1 IN[1]=rasante IN[2]=assembly IN[3]=salida_P2 IN[4]=salida_P3\n# OUT=[corridor_id, logs_acumulados_de_los_4_pasos]\nimport clr\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Corridor\n\np1 = IN[0]\nprofile_name  = IN[1]\nassembly_name = IN[2]\np2 = IN[3]\np3 = IN[4]\nlogs = list(p3[1]) if (p3 and len(p3) > 1 and p3[1]) else []\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n    return ObjectId.Null\n\ndef find_profile(ali_id, name):\n    with db.TransactionManager.StartTransaction() as tr:\n        ali = tr.GetObject(ali_id, OpenMode.ForRead)\n        found, names = None, []\n        for pid in ali.GetProfileIds():\n            p = tr.GetObject(pid, OpenMode.ForRead)\n            names.append(p.Name)\n            if p.Name.upper() == name.upper(): found = pid\n        tr.Commit()\n    return found, names\n\ndef find_assembly(name):\n    import unicodedata\n    def n(s):\n        return ''.join(c for c in unicodedata.normalize('NFD', unicode(s))\n                       if unicodedata.category(c) != 'Mn').upper()\n    tgt = n(name)\n    with db.TransactionManager.StartTransaction() as tr:\n        for aid in cdoc.GetAssemblyIds():\n            if n(tr.GetObject(aid, OpenMode.ForRead).Name) == tgt:\n                tr.Commit(); return aid\n        tr.Commit()\n    return None\n\ntry:\n    if p1 is None or p1[0] is None:\n        OUT = [None, logs + [u'[SKIP P4] PASO 1 sin alineamiento.']]\n    elif p3 is None or p3[0] is None:\n        OUT = [None, logs + [u'[SKIP P4] PASO 3 sin vista de perfil.']]\n    else:\n        alignment_id = p1[0]\n        prof_id, avail = find_profile(alignment_id, profile_name)\n        if prof_id is None:\n            raise ValueError(u'Rasante no encontrada: ' + profile_name +\n                             u'. Disponibles: ' + str(avail))\n        asm_id = find_assembly(assembly_name)\n        if asm_id is None:\n            raise ValueError(u'Assembly no encontrado: ' + assembly_name)\n        cst = sty(cdoc.Styles.CorridorStyles, 'Standard', u'Est\\xe1ndar', 'Estandar')\n        with doc.LockDocument():\n            with db.TransactionManager.StartTransaction() as tr:\n                ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n                s0, s1 = ali.StartingStation, ali.EndingStation\n                cor_id = Corridor.Create(cdoc, u'CORREDOR-EJE')\n                cor = tr.GetObject(cor_id, OpenMode.ForWrite)\n                if cst != ObjectId.Null: cor.StyleId = cst\n                bl  = cor.Baselines.Add(u'BL-EJE', alignment_id, prof_id)\n                reg = bl.BaselineRegions.Add(u'REG-1', asm_id)\n                try:\n                    reg.StartStation = s0\n                    reg.EndStation   = s1\n                except: pass\n                cor.Rebuild()\n                tr.Commit()\n        logs.append(u'[OK P4] Corredor: assembly=' + assembly_name +\n                    u', rasante=' + profile_name)\n        OUT = [cor_id, logs]\nexcept Exception as ex:\n    OUT = [None, logs + [u'[ERROR P4] ' + str(ex)]]\n",
       "Engine": "IronPython2",
       "VariableInputPorts": true,
       "Inputs": [
         {
-          "Id": "289b5321-2398-4037-a60f-4e5644f2150a",
+          "Id": "ea71ee20-fdc9-4d0d-b6a9-f397658c54b1",
           "Name": "IN[0]",
           "Description": "Input #0",
           "UsingDefaultValue": false,
@@ -309,7 +309,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "c277bfd4-6a65-4b4c-93fa-088b437c3443",
+          "Id": "7387b7a8-dcfa-441e-91b5-95c2509f056c",
           "Name": "IN[1]",
           "Description": "Input #1",
           "UsingDefaultValue": false,
@@ -318,7 +318,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "a32ae8fa-c617-4b19-af18-00e5055696b5",
+          "Id": "34415fa2-3039-494d-86d8-a62809018b4c",
           "Name": "IN[2]",
           "Description": "Input #2",
           "UsingDefaultValue": false,
@@ -327,7 +327,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "a32f5e00-bfe7-4de3-8bda-a1b060967016",
+          "Id": "390b04a3-eab1-41b9-b5f6-c8a33fca9f64",
           "Name": "IN[3]",
           "Description": "Input #3",
           "UsingDefaultValue": false,
@@ -336,7 +336,7 @@
           "KeepListStructure": false
         },
         {
-          "Id": "a2236037-ceab-48d2-8066-725c2e80a191",
+          "Id": "7b56f3f9-d85e-4e3c-abf2-83e8fcdabdde",
           "Name": "IN[4]",
           "Description": "Input #4",
           "UsingDefaultValue": false,
@@ -347,7 +347,7 @@
       ],
       "Outputs": [
         {
-          "Id": "de6d1876-7e87-4e5a-8f77-c1ff5aea2b6b",
+          "Id": "5ba6ff1e-39cc-459c-babd-b397251c1b74",
           "Name": "OUT",
           "Description": "",
           "UsingDefaultValue": false,
@@ -361,11 +361,11 @@
     },
     {
       "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
-      "Id": "9f23fcda-d47c-400c-937a-fe3b7c8a9d69",
+      "Id": "d3076787-b06a-4b3d-8e5c-b85af05f06d8",
       "NodeType": "ExtensionNode",
       "Inputs": [
         {
-          "Id": "733b6a69-6ec3-4b3c-8102-7859bcfa33cc",
+          "Id": "34af651f-715c-4a65-9d5e-93d26aca59ab",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -376,7 +376,7 @@
       ],
       "Outputs": [
         {
-          "Id": "15806438-ea19-4788-8d01-251cb7db2c6f",
+          "Id": "55dea79e-0808-4016-8f9b-e4e3e99d0670",
           "Name": "",
           "Description": "",
           "UsingDefaultValue": false,
@@ -391,87 +391,87 @@
   ],
   "Connectors": [
     {
-      "Start": "b0030c09-8fd8-4c02-b2cb-1befc1b318c9",
-      "End": "89ba3854-9bd6-4574-a8ed-5b6ca09792fc",
-      "Id": "8fd6b120-b31e-4a89-81c1-d62dd195ed97",
+      "Start": "157bc14a-8cfc-4ae9-99e3-c15494a91c41",
+      "End": "1134656e-778c-4305-b598-77763fec3480",
+      "Id": "b17b4ccc-5e69-4997-96c1-bf8f8b593b25",
       "IsHidden": "False"
     },
     {
-      "Start": "e8d6000b-7ca2-42e9-853d-179d317e373c",
-      "End": "778d2cf1-a378-49e5-b0d3-e455135387e0",
-      "Id": "02f30b69-6810-4150-aa14-623a3c267968",
+      "Start": "c1bb50f3-629b-4aec-b46a-5d4a01a017eb",
+      "End": "3a4b6566-7b75-4628-a9ed-226b95b753e7",
+      "Id": "a9835740-9b8f-47d7-9285-76061d223039",
       "IsHidden": "False"
     },
     {
-      "Start": "2080eb4b-53d3-4659-85ce-90a34cfcf1aa",
-      "End": "2b8ed556-5d1f-49a3-ab51-16404a7a346f",
-      "Id": "b982e137-249f-4d63-b720-508108440978",
+      "Start": "f8c94f88-f83e-4911-9b3e-82372b1503e4",
+      "End": "1e107ec8-2dfd-4069-849c-5e7aa7ec06e5",
+      "Id": "1ee8826d-800b-4f62-b485-9a73cfdd60b5",
       "IsHidden": "False"
     },
     {
-      "Start": "52b18bbb-539a-4c4d-8e8b-912c0c250503",
-      "End": "c4a7f508-3b84-4a07-b0c0-2d21b1441f4f",
-      "Id": "f8d930fe-0c0c-4c78-aa0c-249d6ef26f60",
+      "Start": "e6152f9c-4b77-4e0a-9270-73d4afde9e08",
+      "End": "79443d39-8aa8-415d-9693-6ba2fec66dd2",
+      "Id": "4f1e1885-a52c-4ff7-a384-1cf8b03d058b",
       "IsHidden": "False"
     },
     {
-      "Start": "2f4c6f09-c297-4313-a8b6-c522ca0f7c06",
-      "End": "8e719d1c-1c18-45b5-8357-7b44e4a1a9ee",
-      "Id": "1a04c47a-91b4-401b-a233-889d7405161e",
+      "Start": "5fa3d254-9e79-4205-a2d0-1bb039dabcb9",
+      "End": "d1d2973d-d1ee-491e-8cb9-3c77d1c90e07",
+      "Id": "e0d910be-f174-4ca6-9c82-2f144dad3f10",
       "IsHidden": "False"
     },
     {
-      "Start": "5da5bcd1-613d-4e70-a48d-d0b18efff20d",
-      "End": "eadeebc3-b6f3-4793-83f8-88a8f0f99808",
-      "Id": "be7ceab3-83bc-4ad9-9947-a24a8e5ee88e",
+      "Start": "316f3e53-45ee-45ce-81e5-ee6a42929941",
+      "End": "56ca0abe-ed47-4330-a7a2-8612e5dc9ee8",
+      "Id": "a4fa0d9c-5dfd-4f81-9dab-3b97ff82e81d",
       "IsHidden": "False"
     },
     {
-      "Start": "5da5bcd1-613d-4e70-a48d-d0b18efff20d",
-      "End": "245a4da0-7b5c-42db-96ac-f3abe9117b5a",
-      "Id": "d3814bbf-7da5-4776-a113-4d49fe1441c9",
+      "Start": "316f3e53-45ee-45ce-81e5-ee6a42929941",
+      "End": "1aa36779-62a1-436f-b8e6-a72f47c3ec80",
+      "Id": "e96d09c6-f052-437a-824b-7c99af222a35",
       "IsHidden": "False"
     },
     {
-      "Start": "6cb9cc6a-db7d-49be-8b05-5b265e9d51d7",
-      "End": "9c384b6e-1606-49ed-ab57-c027f40e2642",
-      "Id": "3064345e-91e4-4d58-ae2b-a5078e68eb1e",
+      "Start": "1a88c82c-3f40-41bd-84d8-e1f9f6b0a0a2",
+      "End": "32e19903-feac-48fc-b769-1b2f07283445",
+      "Id": "f55d6380-303f-42b9-bf4f-9b58e4370243",
       "IsHidden": "False"
     },
     {
-      "Start": "5da5bcd1-613d-4e70-a48d-d0b18efff20d",
-      "End": "289b5321-2398-4037-a60f-4e5644f2150a",
-      "Id": "51a3cda2-2608-4d9b-9925-9a7ff4c7a165",
+      "Start": "316f3e53-45ee-45ce-81e5-ee6a42929941",
+      "End": "ea71ee20-fdc9-4d0d-b6a9-f397658c54b1",
+      "Id": "081eab24-0eef-487e-953b-a4ee030ae084",
       "IsHidden": "False"
     },
     {
-      "Start": "a420330f-1b6d-4507-9369-ff910a79fc9e",
-      "End": "c277bfd4-6a65-4b4c-93fa-088b437c3443",
-      "Id": "6f2688ea-4fec-41fe-96c4-5de7a26c2821",
+      "Start": "6f402338-6e0c-4ca0-90d9-93f10ac159ac",
+      "End": "7387b7a8-dcfa-441e-91b5-95c2509f056c",
+      "Id": "6863e361-a788-4f41-844c-a312a7c36f5c",
       "IsHidden": "False"
     },
     {
-      "Start": "441e92e1-5f14-4bde-b300-bbd00e8568ef",
-      "End": "a32ae8fa-c617-4b19-af18-00e5055696b5",
-      "Id": "00adcf84-bea3-4c45-a845-681775c07241",
+      "Start": "c10ed04a-2093-4fab-bd49-9b8d54c15ff1",
+      "End": "34415fa2-3039-494d-86d8-a62809018b4c",
+      "Id": "a346fb86-d10a-4685-a111-d04873c9629d",
       "IsHidden": "False"
     },
     {
-      "Start": "6cb9cc6a-db7d-49be-8b05-5b265e9d51d7",
-      "End": "a32f5e00-bfe7-4de3-8bda-a1b060967016",
-      "Id": "441d4629-946e-4d8d-ae0a-79ed9fd0d2d8",
+      "Start": "1a88c82c-3f40-41bd-84d8-e1f9f6b0a0a2",
+      "End": "390b04a3-eab1-41b9-b5f6-c8a33fca9f64",
+      "Id": "4c36de70-9b9d-4e42-b8f5-7a8386a625ea",
       "IsHidden": "False"
     },
     {
-      "Start": "818c9fe2-c0ee-4fb7-9f57-17b9e8e64c8b",
-      "End": "a2236037-ceab-48d2-8066-725c2e80a191",
-      "Id": "772d6746-d608-4513-a11d-ec885d1d482d",
+      "Start": "58efe0fb-fe89-476b-9a55-3be66e478976",
+      "End": "7b56f3f9-d85e-4e3c-abf2-83e8fcdabdde",
+      "Id": "7d9fd676-f43c-4ff8-8af2-22a9626684e2",
       "IsHidden": "False"
     },
     {
-      "Start": "de6d1876-7e87-4e5a-8f77-c1ff5aea2b6b",
-      "End": "733b6a69-6ec3-4b3c-8102-7859bcfa33cc",
-      "Id": "ef45f0dc-9059-48ff-8732-2cb4151bdf63",
+      "Start": "5ba6ff1e-39cc-459c-babd-b397251c1b74",
+      "End": "34af651f-715c-4a65-9d5e-93d26aca59ab",
+      "Id": "2693bcbc-f803-4124-b7cb-fcf6b57133a1",
       "IsHidden": "False"
     }
   ],
@@ -502,7 +502,7 @@
     "ConnectorPins": [],
     "NodeViews": [
       {
-        "Id": "ef2c8dfb-37b4-4579-bb6c-7e8c33e580ca",
+        "Id": "9c7f1ce5-6718-4c82-a3a9-9ca6e3812296",
         "Name": "Delta (metros)",
         "Excluded": false,
         "ShowGeometry": true,
@@ -510,7 +510,7 @@
         "Y": 0
       },
       {
-        "Id": "125d0e03-99c2-4573-9f9f-0e968a3bb272",
+        "Id": "f4e94a00-cedb-49f0-ae10-02c75cb4214e",
         "Name": "Capa Eje de Camino",
         "Excluded": false,
         "ShowGeometry": true,
@@ -518,7 +518,7 @@
         "Y": 110
       },
       {
-        "Id": "7aa0e35e-be42-47a4-ad2a-8aab881a9342",
+        "Id": "1849e4a3-1fc6-48b1-a4e4-3398b1131dae",
         "Name": "Nombre Superficie TN",
         "Excluded": false,
         "ShowGeometry": true,
@@ -526,7 +526,7 @@
         "Y": 220
       },
       {
-        "Id": "4e9edf48-a59b-4280-acb9-9e7ce6b0d2a6",
+        "Id": "92413f92-c595-4181-856c-fadb4ef1a112",
         "Name": "Nombre Superficie SELLO",
         "Excluded": false,
         "ShowGeometry": true,
@@ -534,7 +534,7 @@
         "Y": 330
       },
       {
-        "Id": "79570092-99ad-4d2f-972c-9b736683f496",
+        "Id": "733ed817-8af2-45fd-8cb2-79fe737657f1",
         "Name": "Nombre Alineamiento",
         "Excluded": false,
         "ShowGeometry": true,
@@ -542,7 +542,7 @@
         "Y": 440
       },
       {
-        "Id": "707a2ca3-3a8f-4c2c-af1f-40cc9dae799b",
+        "Id": "8427d9df-7df8-47f1-8568-3923e0a9826d",
         "Name": "Nombre Rasante",
         "Excluded": false,
         "ShowGeometry": true,
@@ -550,7 +550,7 @@
         "Y": 550
       },
       {
-        "Id": "1dc4fd27-ddeb-4145-a895-82ea39411b33",
+        "Id": "4dd380a1-cca4-45b8-be02-0dc5d136efd3",
         "Name": "Nombre Assembly",
         "Excluded": false,
         "ShowGeometry": true,
@@ -558,7 +558,7 @@
         "Y": 660
       },
       {
-        "Id": "42a9e8c0-14dd-4299-a479-e2fceb2d2a9a",
+        "Id": "aa4e4bec-ebaf-4e71-ad50-12259ecf6f7a",
         "Name": "PASO 1: Crear Alineamiento",
         "Excluded": false,
         "ShowGeometry": true,
@@ -566,7 +566,7 @@
         "Y": 0
       },
       {
-        "Id": "805aa8bc-9986-4bc4-9ac2-37c3e9cb4291",
+        "Id": "99ff3ad8-61e2-4439-bf6a-1dcc98e9d5d0",
         "Name": "PASO 2: Crear SELLO",
         "Excluded": false,
         "ShowGeometry": true,
@@ -574,7 +574,7 @@
         "Y": 260
       },
       {
-        "Id": "1676c159-27f1-459d-a5bf-d496b92019fe",
+        "Id": "93d37704-1856-4d56-867b-32fcf1bbab16",
         "Name": "PASO 3: Vista de Perfil",
         "Excluded": false,
         "ShowGeometry": true,
@@ -582,7 +582,7 @@
         "Y": 520
       },
       {
-        "Id": "1c5116ca-7778-4cd8-9e8e-b8d62c4fe198",
+        "Id": "706a5ba3-a391-4400-9c40-836fc13a185b",
         "Name": "PASO 4: Crear Corredor",
         "Excluded": false,
         "ShowGeometry": true,
@@ -590,7 +590,7 @@
         "Y": 780
       },
       {
-        "Id": "9f23fcda-d47c-400c-937a-fe3b7c8a9d69",
+        "Id": "d3076787-b06a-4b3d-8e5c-b85af05f06d8",
         "Name": "Watch: Resultado",
         "Excluded": false,
         "ShowGeometry": true,
