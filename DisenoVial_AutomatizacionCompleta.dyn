@@ -1,248 +1,559 @@
 {
-  "Uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "Uuid": "c1v1l3d0-d1se-n0v1-a1au-t0mat1c2026x",
   "IsCustomNode": false,
-  "Description": "Automatización completa de diseño vial en Civil 3D 2026:\n1. Crea alineamiento desde polilínea en capa 'EJE DE CAMINO'\n2. Crea superficie SELLO = TN - delta\n3. Crea vista de perfil longitudinal (TN + SELLO)\n4. Crea corredor con assembly 'camino' y rasante existente",
+  "Description": "Automatizacion diseno vial Civil 3D 2026: Alineamiento, SELLO, Perfil Longitudinal y Corredor.",
   "Name": "DisenoVial_AutomatizacionCompleta",
-  "ElementResolver": { "ResolutionMap": {} },
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
   "Inputs": [],
   "Outputs": [],
   "Nodes": [
-
     {
       "ConcreteType": "CoreNodeModels.Input.DoubleInput, CoreNodeModels",
       "NodeType": "NumberInputNode",
       "NumberType": "Double",
       "InputValue": 0.3,
-      "Id": "node-delta-input",
+      "Id": "d0000001-0000-0000-0000-000000000000",
       "Inputs": [],
-      "Outputs": [{ "Id": "out-delta", "Name": "", "Description": "", "Type": "double", "Type2": "double", "Index": 0 }],
+      "Outputs": [
+        {
+          "Id": "d0000001-0000-0000-0000-000000000000-o0",
+          "Name": "",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        }
+      ],
       "Replication": "Disabled",
-      "Description": "DELTA (m): Valor de decapado/desbroce. Rango válido: 0.00 – 0.60 m",
+      "Description": "DELTA (m): Decapado/desbroce. Rango: 0.00-0.60 m",
       "Name": "Delta (metros)",
       "X": 0,
       "Y": 0
     },
-
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "NodeType": "StringInputNode",
       "InputValue": "EJE DE CAMINO",
-      "Id": "node-layer-name",
+      "Id": "d0000002-0000-0000-0000-000000000000",
       "Inputs": [],
-      "Outputs": [{ "Id": "out-layer", "Name": "", "Description": "", "Type": "string", "Type2": "string", "Index": 0 }],
+      "Outputs": [
+        {
+          "Id": "d0000002-0000-0000-0000-000000000000-o0",
+          "Name": "",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        }
+      ],
       "Replication": "Disabled",
-      "Description": "Nombre de capa de la polilínea eje. NOTA: Respetar mayúsculas y espacios exactos.",
+      "Description": "Capa de la polilinea eje. Respetar mayusculas y espacios.",
       "Name": "Capa Eje de Camino",
       "X": 0,
       "Y": 120
     },
-
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "NodeType": "StringInputNode",
       "InputValue": "TN",
-      "Id": "node-tn-name",
+      "Id": "d0000003-0000-0000-0000-000000000000",
       "Inputs": [],
-      "Outputs": [{ "Id": "out-tn", "Name": "", "Description": "", "Type": "string", "Type2": "string", "Index": 0 }],
+      "Outputs": [
+        {
+          "Id": "d0000003-0000-0000-0000-000000000000-o0",
+          "Name": "",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        }
+      ],
       "Replication": "Disabled",
-      "Description": "Nombre exacto de la superficie de terreno natural. Debe existir en el modelo.",
+      "Description": "Nombre exacto de la superficie terreno natural.",
       "Name": "Nombre Superficie TN",
       "X": 0,
       "Y": 240
     },
-
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "NodeType": "StringInputNode",
       "InputValue": "SELLO",
-      "Id": "node-sello-name",
+      "Id": "d0000004-0000-0000-0000-000000000000",
       "Inputs": [],
-      "Outputs": [{ "Id": "out-sello", "Name": "", "Description": "", "Type": "string", "Type2": "string", "Index": 0 }],
+      "Outputs": [
+        {
+          "Id": "d0000004-0000-0000-0000-000000000000-o0",
+          "Name": "",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        }
+      ],
       "Replication": "Disabled",
       "Description": "Nombre de la superficie de sello a crear.",
       "Name": "Nombre Superficie SELLO",
       "X": 0,
       "Y": 360
     },
-
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "NodeType": "StringInputNode",
       "InputValue": "ALI-EJE",
-      "Id": "node-ali-name",
+      "Id": "d0000005-0000-0000-0000-000000000000",
       "Inputs": [],
-      "Outputs": [{ "Id": "out-ali", "Name": "", "Description": "", "Type": "string", "Type2": "string", "Index": 0 }],
+      "Outputs": [
+        {
+          "Id": "d0000005-0000-0000-0000-000000000000-o0",
+          "Name": "",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        }
+      ],
       "Replication": "Disabled",
       "Description": "Nombre del alineamiento a crear.",
       "Name": "Nombre Alineamiento",
       "X": 0,
       "Y": 480
     },
-
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "NodeType": "StringInputNode",
       "InputValue": "RASANTE",
-      "Id": "node-profile-name",
+      "Id": "d0000006-0000-0000-0000-000000000000",
       "Inputs": [],
-      "Outputs": [{ "Id": "out-profile", "Name": "", "Description": "", "Type": "string", "Type2": "string", "Index": 0 }],
+      "Outputs": [
+        {
+          "Id": "d0000006-0000-0000-0000-000000000000-o0",
+          "Name": "",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        }
+      ],
       "Replication": "Disabled",
-      "Description": "Nombre de la rasante existente en el modelo. El script NO la genera: debe estar creada manualmente.",
+      "Description": "Nombre de la rasante existente. El script NO la genera.",
       "Name": "Nombre Rasante (existente)",
       "X": 0,
       "Y": 600
     },
-
     {
       "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
       "NodeType": "StringInputNode",
       "InputValue": "camino",
-      "Id": "node-assembly-name",
+      "Id": "d0000007-0000-0000-0000-000000000000",
       "Inputs": [],
-      "Outputs": [{ "Id": "out-assembly", "Name": "", "Description": "", "Type": "string", "Type2": "string", "Index": 0 }],
+      "Outputs": [
+        {
+          "Id": "d0000007-0000-0000-0000-000000000000-o0",
+          "Name": "",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        }
+      ],
       "Replication": "Disabled",
-      "Description": "Nombre del assembly/subassembly. NOTA: Civil 3D en español puede llamarlo 'camino' o con acento. Verificar en el Toolspace.",
-      "Name": "Nombre Assembly 'camino'",
+      "Description": "Nombre del assembly. Verificar en Toolspace.",
+      "Name": "Nombre Assembly camino",
       "X": 0,
       "Y": 720
     },
-
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "NodeType": "PythonScriptNode",
       "Engine": "IronPython2",
       "VariableInputPorts": false,
-      "Id": "node-paso1-alineamiento",
+      "Id": "e0000001-0000-0000-0000-000000000000",
       "Inputs": [
-        { "Id": "in-layer",  "Name": "layer_name",      "Description": "Capa de la polilínea eje",   "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-aliname","Name": "alignment_name",   "Description": "Nombre del alineamiento",     "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false }
+        {
+          "Id": "e0000001-0000-0000-0000-000000000000-i0",
+          "Name": "layer_name",
+          "Description": "Capa de la polilinea",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000001-0000-0000-0000-000000000000-i1",
+          "Name": "alignment_name",
+          "Description": "Nombre del alineamiento",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
       ],
       "Outputs": [
-        { "Id": "out-ali-id",    "Name": "alignment_id",   "Description": "ObjectId del alineamiento creado",  "Type": "var", "Type2": "var", "Index": 0 },
-        { "Id": "out-ali-log",   "Name": "log",            "Description": "Mensaje de resultado",               "Type": "var", "Type2": "var", "Index": 1 }
+        {
+          "Id": "e0000001-0000-0000-0000-000000000000-o0",
+          "Name": "alignment_id",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        },
+        {
+          "Id": "e0000001-0000-0000-0000-000000000000-o1",
+          "Name": "log",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 1
+        }
       ],
       "Replication": "Disabled",
-      "Description": "PASO 1 — Crea alineamiento desde polilínea en 'EJE DE CAMINO'.\nManeja geometría mixta (líneas + arcos) sin perder fidelidad.",
+      "Description": "Crea alineamiento desde polilinea en EJE DE CAMINO. Geometria mixta (lineas+arcos).",
       "Name": "PASO 1: Crear Alineamiento",
-      "X": 500,
+      "X": 520,
       "Y": 0,
-      "Script": "# ==========================================================\n# PASO 1: Obtener polilínea y crear alineamiento\n# Civil 3D 2026 — Dynamo IronPython 2.7\n# ==========================================================\nimport clr, sys\n\n# Añadir rutas de Civil 3D si no están en sys.path\ncivil3d_paths = [\n    r'C:\\Program Files\\Autodesk\\AutoCAD 2026\\',\n    r'C:\\Program Files\\Autodesk\\Civil 3D 2026\\',\n]\nfor p in civil3d_paths:\n    if p not in sys.path:\n        sys.path.append(p)\n\nclr.AddReference('AcMgd')\nclr.AddReference('AcDbMgd')\nclr.AddReference('AeccDbMgd')\n\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Alignment, TinSurface\nimport math\n\n# --- Entradas desde nodos Dynamo ---\nlayer_name     = IN[0]  # 'EJE DE CAMINO'\nalignment_name = IN[1]  # 'ALI-EJE'\n\ndoc       = Application.DocumentManager.MdiActiveDocument\ndb        = doc.Database\ncivil_doc = CivilApplication.ActiveDocument\n\ndef normalize_str(s):\n    \"\"\"Elimina acentos y convierte a mayúsculas para comparación.\"\"\"\n    import unicodedata\n    return ''.join(\n        c for c in unicodedata.normalize('NFD', unicode(s))\n        if unicodedata.category(c) != 'Mn'\n    ).upper()\n\ndef bulge_to_arc_params(p1, p2, bulge):\n    \"\"\"Convierte bulge de Lwpolyline a parámetros geométricos de arco.\"\"\"\n    theta  = 4.0 * math.atan(abs(bulge))\n    d      = math.sqrt((p2.X-p1.X)**2 + (p2.Y-p1.Y)**2)\n    if d < 1e-9: return None\n    radius = d / (2.0 * math.sin(theta / 2.0))\n    mx, my = (p1.X+p2.X)/2.0, (p1.Y+p2.Y)/2.0\n    dist_mid = math.sqrt(max(0, radius**2 - (d/2.0)**2))\n    chord_a  = math.atan2(p2.Y-p1.Y, p2.X-p1.X)\n    clockwise = bulge < 0\n    perp = chord_a + (math.pi/2.0 if not clockwise else -math.pi/2.0)\n    cx = mx + dist_mid * math.cos(perp)\n    cy = my + dist_mid * math.sin(perp)\n    sa = math.atan2(p1.Y-cy, p1.X-cx)\n    ea = math.atan2(p2.Y-cy, p2.X-cx)\n    return {\n        'center'   : Point3d(cx, cy, 0),\n        'radius'   : radius,\n        'start'    : sa,\n        'end'      : ea,\n        'clockwise': clockwise\n    }\n\ntry:\n    target_layer = normalize_str(layer_name)\n    polyline_id  = None\n\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            bt  = tr.GetObject(db.BlockTableId, OpenMode.ForRead)\n            btr = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead)\n\n            for oid in btr:\n                obj = tr.GetObject(oid, OpenMode.ForRead)\n                # Comparar capa con y sin acentos\n                if (normalize_str(obj.Layer) == target_layer and\n                        isinstance(obj, (Polyline, Polyline2d, Polyline3d))):\n                    polyline_id = oid\n                    break\n            tr.Commit()\n\n    if polyline_id is None:\n        raise ValueError(\n            u\"No se encontró polilínea en la capa '{}'. \"\n            u\"Verificar nombre exacto de la capa.\".format(layer_name)\n        )\n\n    # --- Resolver estilos (tolerante a idioma) ---\n    def get_style(collection, *names):\n        for n in names:\n            try: return collection[n]\n            except: pass\n        for sid in collection: return sid\n        raise ValueError(u\"Sin estilos disponibles en la colección.\")\n\n    ali_style_id = get_style(\n        civil_doc.Styles.AlignmentStyles,\n        'Standard', u'Estándar', 'Estandar'\n    )\n    lbl_set_id = get_style(\n        civil_doc.Styles.LabelSetStyles.AlignmentLabelSetStyles,\n        'Standard', u'Estándar', 'Estandar', '_No Labels'\n    )\n\n    # --- MÉTODO PRINCIPAL: CreateFromPolyline (preserva arcos nativamente) ---\n    # NOTA CRÍTICA: El tercer argumento es el ObjectId del sitio.\n    # En Civil 3D 2024+ se puede pasar ObjectId.Null para 'sin sitio'.\n    # En versiones anteriores se necesita un sitio válido.\n    alignment_id = None\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            try:\n                alignment_id = Alignment.CreateFromPolyline(\n                    civil_doc,\n                    alignment_name,\n                    ObjectId.Null,  # Sin sitio — Civil 3D 2024+\n                    polyline_id,\n                    'C-ROAD-CNTR',  # Capa estándar para ejes\n                    ali_style_id,\n                    lbl_set_id,\n                    False,  # eraseExistingEntities: NO borrar polilínea\n                    True    # addCurvesBetweenTangents\n                )\n                log_msg = u\"[OK] Alineamiento '{}' creado desde polilínea.\".format(alignment_name)\n                tr.Commit()\n\n            except Exception as e_main:\n                tr.Abort()\n                # FALLBACK: construcción manual entidad a entidad\n                log_msg = u\"[WARN] CreateFromPolyline falló ({}). Usando método manual.\".format(str(e_main))\n\n                with doc.LockDocument():\n                    with db.TransactionManager.StartTransaction() as tr2:\n                        pl = tr2.GetObject(polyline_id, OpenMode.ForRead)\n                        n  = pl.NumberOfVertices\n\n                        alignment_id = Alignment.Create(\n                            civil_doc, alignment_name, ObjectId.Null,\n                            'C-ROAD-CNTR', ali_style_id, lbl_set_id\n                        )\n                        ali  = tr2.GetObject(alignment_id, OpenMode.ForWrite)\n                        ents = ali.Entities\n\n                        for i in range(n - 1):\n                            pt1   = pl.GetPoint3dAt(i)\n                            pt2   = pl.GetPoint3dAt(i + 1)\n                            bulge = pl.GetBulgeAt(i)\n                            seg   = pl.GetSegmentType(i)\n\n                            if bulge == 0.0 or seg.value__ == 1:  # Line\n                                ents.AddFixedLine(\n                                    Point3d(pt1.X, pt1.Y, 0),\n                                    Point3d(pt2.X, pt2.Y, 0)\n                                )\n                            else:  # Arc\n                                arc = bulge_to_arc_params(pt1, pt2, bulge)\n                                if arc:\n                                    ents.AddFixedArc(\n                                        arc['center'], arc['radius'],\n                                        arc['start'], arc['end'],\n                                        arc['clockwise']\n                                    )\n\n                        tr2.Commit()\n                        log_msg += u\" Alineamiento manual creado OK.\"\n\n    OUT = [alignment_id, log_msg]\n\nexcept Exception as ex:\n    OUT = [None, u'[ERROR PASO 1] ' + str(ex)]"
+      "Script": "import clr, sys, math\nclr.AddReference('AcMgd')\nclr.AddReference('AcDbMgd')\nclr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Alignment\n\nlayer_name = IN[0]\nali_name   = IN[1]\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef norm(s):\n    import unicodedata\n    return ''.join(c for c in unicodedata.normalize('NFD', unicode(s)) if unicodedata.category(c) != 'Mn').upper()\n\ndef bulge_arc(p1, p2, b):\n    t  = 4.0 * math.atan(abs(b))\n    d  = math.sqrt((p2.X-p1.X)**2 + (p2.Y-p1.Y)**2)\n    if d < 1e-9: return None\n    r  = d / (2.0 * math.sin(t / 2.0))\n    mx, my = (p1.X+p2.X)/2.0, (p1.Y+p2.Y)/2.0\n    dm = math.sqrt(max(0, r**2 - (d/2.0)**2))\n    ca = math.atan2(p2.Y-p1.Y, p2.X-p1.X)\n    cw = b < 0\n    pp = ca + (math.pi/2.0 if not cw else -math.pi/2.0)\n    cx = mx + dm*math.cos(pp)\n    cy = my + dm*math.sin(pp)\n    return {'c':Point3d(cx,cy,0),'r':r,'sa':math.atan2(p1.Y-cy,p1.X-cx),'ea':math.atan2(p2.Y-cy,p2.X-cx),'cw':cw}\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n\ntry:\n    tgt = norm(layer_name)\n    pid = None\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            bt  = tr.GetObject(db.BlockTableId, OpenMode.ForRead)\n            btr = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead)\n            for oid in btr:\n                obj = tr.GetObject(oid, OpenMode.ForRead)\n                if norm(obj.Layer) == tgt and isinstance(obj, (Polyline, Polyline2d, Polyline3d)):\n                    pid = oid\n                    break\n            tr.Commit()\n    if pid is None:\n        raise ValueError(u'Polyline not found in layer: ' + layer_name)\n    ast = sty(cdoc.Styles.AlignmentStyles, 'Standard', u'Estandar')\n    lst = sty(cdoc.Styles.LabelSetStyles.AlignmentLabelSetStyles, 'Standard', '_No Labels')\n    aid = None\n    log = ''\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            try:\n                aid = Alignment.CreateFromPolyline(cdoc, ali_name, ObjectId.Null, pid, 'C-ROAD-CNTR', ast, lst, False, True)\n                log = u'[OK] Alignment created.'\n                tr.Commit()\n            except Exception as e:\n                tr.Abort()\n                log = u'[WARN] Fallback: ' + str(e)\n                with doc.LockDocument():\n                    with db.TransactionManager.StartTransaction() as t2:\n                        pl  = t2.GetObject(pid, OpenMode.ForRead)\n                        aid = Alignment.Create(cdoc, ali_name, ObjectId.Null, 'C-ROAD-CNTR', ast, lst)\n                        al  = t2.GetObject(aid, OpenMode.ForWrite)\n                        for i in range(pl.NumberOfVertices - 1):\n                            p1 = pl.GetPoint3dAt(i)\n                            p2 = pl.GetPoint3dAt(i+1)\n                            bv = pl.GetBulgeAt(i)\n                            if bv == 0.0:\n                                al.Entities.AddFixedLine(Point3d(p1.X,p1.Y,0), Point3d(p2.X,p2.Y,0))\n                            else:\n                                av = bulge_arc(p1, p2, bv)\n                                if av:\n                                    al.Entities.AddFixedArc(av['c'], av['r'], av['sa'], av['ea'], av['cw'])\n                        t2.Commit()\n                        log += ' Done.'\n    OUT = [aid, log]\nexcept Exception as ex:\n    OUT = [None, '[ERR P1] ' + str(ex)]\n"
     },
-
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "NodeType": "PythonScriptNode",
       "Engine": "IronPython2",
       "VariableInputPorts": false,
-      "Id": "node-paso2-sello",
+      "Id": "e0000002-0000-0000-0000-000000000000",
       "Inputs": [
-        { "Id": "in-tn-name",    "Name": "tn_name",    "Description": "Nombre superficie TN",    "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-sello-name", "Name": "sello_name", "Description": "Nombre superficie SELLO", "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-delta",      "Name": "delta",      "Description": "Valor delta en metros",   "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-ali-id2",    "Name": "alignment_id","Description": "Dependencia: esperar PASO 1", "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false }
+        {
+          "Id": "e0000002-0000-0000-0000-000000000000-i0",
+          "Name": "tn_name",
+          "Description": "Nombre superficie TN",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000002-0000-0000-0000-000000000000-i1",
+          "Name": "sello_name",
+          "Description": "Nombre superficie SELLO",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000002-0000-0000-0000-000000000000-i2",
+          "Name": "delta",
+          "Description": "Valor delta en metros",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000002-0000-0000-0000-000000000000-i3",
+          "Name": "alignment_id",
+          "Description": "Dependencia PASO 1",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
       ],
       "Outputs": [
-        { "Id": "out-sello-id",  "Name": "sello_id", "Description": "ObjectId de SELLO",   "Type": "var", "Type2": "var", "Index": 0 },
-        { "Id": "out-tn-id",     "Name": "tn_id",    "Description": "ObjectId de TN",      "Type": "var", "Type2": "var", "Index": 1 },
-        { "Id": "out-sello-log", "Name": "log",      "Description": "Mensaje de resultado", "Type": "var", "Type2": "var", "Index": 2 }
+        {
+          "Id": "e0000002-0000-0000-0000-000000000000-o0",
+          "Name": "sello_id",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        },
+        {
+          "Id": "e0000002-0000-0000-0000-000000000000-o1",
+          "Name": "tn_id",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 1
+        },
+        {
+          "Id": "e0000002-0000-0000-0000-000000000000-o2",
+          "Name": "log",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 2
+        }
       ],
       "Replication": "Disabled",
-      "Description": "PASO 2 — Crea superficie SELLO = TN - delta.\nDelta es el valor de decapado/desbroce (0.00–0.60 m).",
+      "Description": "Crea SELLO = TN - delta. Delta ajustable (0.00-0.60 m).",
       "Name": "PASO 2: Crear Superficie SELLO",
-      "X": 500,
-      "Y": 280,
-      "Script": "# ==========================================================\n# PASO 2: Crear superficie SELLO = TN - delta\n# Civil 3D 2026 — Dynamo IronPython 2.7\n# ==========================================================\nimport clr, sys\n\nclr.AddReference('AcMgd')\nclr.AddReference('AcDbMgd')\nclr.AddReference('AeccDbMgd')\n\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import TinSurface\n\n# --- Entradas ---\ntn_name    = IN[0]   # 'TN'\nsello_name = IN[1]   # 'SELLO'\ndelta      = float(IN[2])  # 0.00 – 0.60\n# IN[3] es alignment_id solo para forzar orden de ejecución (dependencia)\n\n# Validar delta\nif not (0.0 <= delta <= 0.60):\n    OUT = [None, None, u'[WARN] Delta={} fuera del rango 0.00–0.60. Se usará igualmente.'.format(delta)]\n\ndoc       = Application.DocumentManager.MdiActiveDocument\ndb        = doc.Database\ncivil_doc = CivilApplication.ActiveDocument\n\ndef find_surface(name):\n    for sid in civil_doc.GetSurfaceIds():\n        with db.TransactionManager.StartTransaction() as tr:\n            s = tr.GetObject(sid, OpenMode.ForRead)\n            tr.Commit()\n            if s.Name.upper() == name.upper():\n                return sid\n    return None\n\ndef get_style(collection, *names):\n    for n in names:\n        try: return collection[n]\n        except: pass\n    for sid in collection: return sid\n\ntry:\n    tn_id = find_surface(tn_name)\n    if tn_id is None:\n        raise ValueError(u\"Superficie '{}' no encontrada.\".format(tn_name))\n\n    # Verificar si SELLO ya existe\n    existing = find_surface(sello_name)\n    if existing is not None:\n        # Eliminar y recrear para aplicar nuevo delta\n        with doc.LockDocument():\n            with db.TransactionManager.StartTransaction() as tr:\n                s = tr.GetObject(existing, OpenMode.ForWrite)\n                s.Erase()\n                tr.Commit()\n\n    style_id = get_style(\n        civil_doc.Styles.SurfaceStyles,\n        'Standard', u'Estándar', 'Estandar'\n    )\n\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            # Crear nueva TinSurface para SELLO\n            sello_id = TinSurface.Create(civil_doc, sello_name)\n            sello    = tr.GetObject(sello_id, OpenMode.ForWrite)\n            sello.StyleId = style_id\n\n            # MÉTODO 1: DefinitionAddPastedSurface (Civil 3D 2024+ inglés)\n            # Si falla, usar copia manual de puntos con offset Z\n            try:\n                sello.DefinitionAddPastedSurface(tn_id)\n                # El ElevationAdjustment aplica el offset negativo\n                # NOTA: En español puede llamarse 'AjusteElevacion' — verificar con\n                # type(sello).GetProperties() si falla.\n                sello.ElevationAdjustment = -delta\n                sello.Rebuild()\n                method_used = 'PastedSurface'\n\n            except AttributeError:\n                # FALLBACK: copiar puntos TIN manualmente con offset Z\n                tn = tr.GetObject(tn_id, OpenMode.ForRead)\n                pts = tn.GetPoints()\n                for pt in pts:\n                    sello.AddPoint(Point3d(pt.X, pt.Y, pt.Z - delta))\n                sello.Rebuild()\n                method_used = 'ManualPoints'\n\n            tr.Commit()\n\n    log_msg = (u'[OK] Superficie SELLO creada. Delta={} m. Método: {}'\n               .format(delta, method_used))\n    OUT = [sello_id, tn_id, log_msg]\n\nexcept Exception as ex:\n    OUT = [None, None, u'[ERROR PASO 2] ' + str(ex)]"
+      "X": 520,
+      "Y": 300,
+      "Script": "import clr, sys\nclr.AddReference('AcMgd')\nclr.AddReference('AcDbMgd')\nclr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import TinSurface\n\ntn_name    = IN[0]\nsello_name = IN[1]\ndelta      = float(IN[2])\n# IN[3] = alignment_id — forza orden de ejecucion\n\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef find_surf(name):\n    for sid in cdoc.GetSurfaceIds():\n        with db.TransactionManager.StartTransaction() as tr:\n            s = tr.GetObject(sid, OpenMode.ForRead)\n            tr.Commit()\n            if s.Name.upper() == name.upper(): return sid\n    return None\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n\ntry:\n    tn_id = find_surf(tn_name)\n    if tn_id is None:\n        raise ValueError(u'Surface not found: ' + tn_name)\n    ex_id = find_surf(sello_name)\n    if ex_id is not None:\n        with doc.LockDocument():\n            with db.TransactionManager.StartTransaction() as tr:\n                s = tr.GetObject(ex_id, OpenMode.ForWrite)\n                s.Erase()\n                tr.Commit()\n    st = sty(cdoc.Styles.SurfaceStyles, 'Standard', u'Estandar')\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            sid  = TinSurface.Create(cdoc, sello_name)\n            srf  = tr.GetObject(sid, OpenMode.ForWrite)\n            srf.StyleId = st\n            try:\n                srf.DefinitionAddPastedSurface(tn_id)\n                srf.ElevationAdjustment = -delta\n                srf.Rebuild()\n                mth = 'Pasted'\n            except AttributeError:\n                tn = tr.GetObject(tn_id, OpenMode.ForRead)\n                for pt in tn.GetPoints():\n                    srf.AddPoint(Point3d(pt.X, pt.Y, pt.Z - delta))\n                srf.Rebuild()\n                mth = 'Manual'\n            tr.Commit()\n    OUT = [sid, tn_id, u'[OK] SELLO created. Delta=' + str(delta) + 'm. Method=' + mth]\nexcept Exception as ex:\n    OUT = [None, None, '[ERR P2] ' + str(ex)]\n"
     },
-
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "NodeType": "PythonScriptNode",
       "Engine": "IronPython2",
       "VariableInputPorts": false,
-      "Id": "node-paso3-perfil",
+      "Id": "e0000003-0000-0000-0000-000000000000",
       "Inputs": [
-        { "Id": "in-ali-id3",   "Name": "alignment_id", "Description": "ObjectId del alineamiento",  "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-tn-id3",    "Name": "tn_id",        "Description": "ObjectId superficie TN",     "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-sello-id3", "Name": "sello_id",     "Description": "ObjectId superficie SELLO",  "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false }
+        {
+          "Id": "e0000003-0000-0000-0000-000000000000-i0",
+          "Name": "alignment_id",
+          "Description": "ObjectId del alineamiento",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000003-0000-0000-0000-000000000000-i1",
+          "Name": "tn_id",
+          "Description": "ObjectId superficie TN",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000003-0000-0000-0000-000000000000-i2",
+          "Name": "sello_id",
+          "Description": "ObjectId superficie SELLO",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
       ],
       "Outputs": [
-        { "Id": "out-pv-id",  "Name": "profile_view_id", "Description": "ObjectId de la vista de perfil", "Type": "var", "Type2": "var", "Index": 0 },
-        { "Id": "out-pv-log", "Name": "log",             "Description": "Mensaje de resultado",            "Type": "var", "Type2": "var", "Index": 1 }
+        {
+          "Id": "e0000003-0000-0000-0000-000000000000-o0",
+          "Name": "profile_view_id",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        },
+        {
+          "Id": "e0000003-0000-0000-0000-000000000000-o1",
+          "Name": "log",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 1
+        }
       ],
       "Replication": "Disabled",
-      "Description": "PASO 3 — Crea vista de perfil longitudinal con TN y SELLO.\nPosicionada a la derecha del alineamiento, estilo por defecto.",
+      "Description": "Crea vista de perfil longitudinal con TN y SELLO. A la derecha del alineamiento.",
       "Name": "PASO 3: Crear Vista de Perfil",
-      "X": 500,
-      "Y": 560,
-      "Script": "# ==========================================================\n# PASO 3: Crear vista de perfil longitudinal\n# Civil 3D 2026 — Dynamo IronPython 2.7\n# ==========================================================\nimport clr, sys\n\nclr.AddReference('AcMgd')\nclr.AddReference('AcDbMgd')\nclr.AddReference('AeccDbMgd')\n\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Profile, ProfileView\n\n# --- Entradas ---\nalignment_id = IN[0]\ntn_id        = IN[1]\nsello_id     = IN[2]\n\ndoc       = Application.DocumentManager.MdiActiveDocument\ndb        = doc.Database\ncivil_doc = CivilApplication.ActiveDocument\n\ndef get_style(collection, *names):\n    for n in names:\n        try: return collection[n]\n        except: pass\n    for sid in collection: return sid\n\ndef ensure_surface_profile(tr, alignment_id, surface_id, prof_name):\n    \"\"\"Crea perfil de superficie si no existe.\"\"\"\n    ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n    for pid in ali.GetProfileIds():\n        p = tr.GetObject(pid, OpenMode.ForRead)\n        try:\n            if p.SurfaceId == surface_id:\n                return pid\n        except AttributeError:\n            pass\n\n    style_id = get_style(\n        civil_doc.Styles.ProfileStyles,\n        'Standard', u'Estándar', 'Estandar'\n    )\n    lbl_id = get_style(\n        civil_doc.Styles.LabelSetStyles.ProfileLabelSetStyles,\n        '_No Labels', 'Standard', u'Estándar'\n    )\n    return Profile.CreateFromSurface(\n        civil_doc, alignment_id, surface_id,\n        prof_name, style_id, lbl_id\n    )\n\ntry:\n    pv_style_id  = get_style(\n        civil_doc.Styles.ProfileViewStyles,\n        'Standard', u'Estándar', 'Estandar'\n    )\n    band_set_id  = get_style(\n        civil_doc.Styles.ProfileViewBandSetStyles,\n        'Standard', u'Estándar', 'Estandar', '_No Bands'\n    )\n\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n\n            # Calcular punto de inserción a la derecha del alineamiento\n            ext       = ali.GeometricExtents\n            offset_x  = 150.0  # metros de separación\n            insert_pt = Point3d(\n                ext.MaxPoint.X + offset_x,\n                ext.MinPoint.Y,\n                0\n            )\n\n            # Crear perfiles de superficie (TN y SELLO)\n            tn_prof_id    = ensure_surface_profile(tr, alignment_id, tn_id,    'PERF-TN')\n            sello_prof_id = ensure_surface_profile(tr, alignment_id, sello_id, 'PERF-SELLO')\n\n            # Crear vista de perfil\n            # NOTA: ProfileView.Create() en Civil 3D español puede requerir\n            # parámetros adicionales. Usar sobrecarga mínima como base.\n            pv_id = ProfileView.Create(\n                civil_doc,\n                alignment_id,\n                insert_pt,\n                'PV-EJE',\n                pv_style_id,\n                band_set_id\n            )\n\n            tr.Commit()\n\n    log_msg = u'[OK] Vista de perfil PV-EJE creada con TN y SELLO.'\n    OUT = [pv_id, log_msg]\n\nexcept Exception as ex:\n    OUT = [None, u'[ERROR PASO 3] ' + str(ex)]"
+      "X": 520,
+      "Y": 600,
+      "Script": "import clr, sys\nclr.AddReference('AcMgd')\nclr.AddReference('AcDbMgd')\nclr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.AutoCAD.Geometry import Point3d\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Profile, ProfileView\n\nalignment_id = IN[0]\ntn_id        = IN[1]\nsello_id     = IN[2]\n\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n\ndef ensure_prof(tr, ali_id, surf_id, name):\n    ali = tr.GetObject(ali_id, OpenMode.ForRead)\n    for pid in ali.GetProfileIds():\n        p = tr.GetObject(pid, OpenMode.ForRead)\n        try:\n            if p.SurfaceId == surf_id: return pid\n        except: pass\n    ps = sty(cdoc.Styles.ProfileStyles, 'Standard', u'Estandar')\n    ls = sty(cdoc.Styles.LabelSetStyles.ProfileLabelSetStyles, '_No Labels', 'Standard')\n    return Profile.CreateFromSurface(cdoc, ali_id, surf_id, name, ps, ls)\n\ntry:\n    pvs = sty(cdoc.Styles.ProfileViewStyles, 'Standard', u'Estandar')\n    bss = sty(cdoc.Styles.ProfileViewBandSetStyles, 'Standard', u'Estandar', '_No Bands')\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n            ext = ali.GeometricExtents\n            ins = Point3d(ext.MaxPoint.X + 150.0, ext.MinPoint.Y, 0)\n            ensure_prof(tr, alignment_id, tn_id,    'PERF-TN')\n            ensure_prof(tr, alignment_id, sello_id, 'PERF-SELLO')\n            pv_id = ProfileView.Create(cdoc, alignment_id, ins, 'PV-EJE', pvs, bss)\n            tr.Commit()\n    OUT = [pv_id, u'[OK] Profile view PV-EJE created with TN and SELLO.']\nexcept Exception as ex:\n    OUT = [None, '[ERR P3] ' + str(ex)]\n"
     },
-
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
       "NodeType": "PythonScriptNode",
       "Engine": "IronPython2",
       "VariableInputPorts": false,
-      "Id": "node-paso4-corredor",
+      "Id": "e0000004-0000-0000-0000-000000000000",
       "Inputs": [
-        { "Id": "in-ali-id4",      "Name": "alignment_id",  "Description": "ObjectId del alineamiento",    "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-profile-name", "Name": "profile_name",  "Description": "Nombre de la rasante existente","UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-assembly-name","Name": "assembly_name", "Description": "Nombre del assembly 'camino'",  "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-sello-id4",    "Name": "sello_id",      "Description": "Superficie SELLO para target",  "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false },
-        { "Id": "in-pv-id4",       "Name": "pv_id",         "Description": "Dependencia: esperar PASO 3",   "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false }
+        {
+          "Id": "e0000004-0000-0000-0000-000000000000-i0",
+          "Name": "alignment_id",
+          "Description": "ObjectId del alineamiento",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000004-0000-0000-0000-000000000000-i1",
+          "Name": "profile_name",
+          "Description": "Nombre rasante existente",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000004-0000-0000-0000-000000000000-i2",
+          "Name": "assembly_name",
+          "Description": "Nombre assembly camino",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000004-0000-0000-0000-000000000000-i3",
+          "Name": "sello_id",
+          "Description": "Superficie SELLO target",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        },
+        {
+          "Id": "e0000004-0000-0000-0000-000000000000-i4",
+          "Name": "pv_id",
+          "Description": "Dependencia PASO 3",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
       ],
       "Outputs": [
-        { "Id": "out-corr-id",  "Name": "corridor_id", "Description": "ObjectId del corredor",    "Type": "var", "Type2": "var", "Index": 0 },
-        { "Id": "out-corr-log", "Name": "log",         "Description": "Mensaje de resultado",     "Type": "var", "Type2": "var", "Index": 1 }
+        {
+          "Id": "e0000004-0000-0000-0000-000000000000-o0",
+          "Name": "corridor_id",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        },
+        {
+          "Id": "e0000004-0000-0000-0000-000000000000-o1",
+          "Name": "log",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 1
+        }
       ],
       "Replication": "Disabled",
-      "Description": "PASO 4 — Crea el corredor vial.\nUsa alineamiento + rasante existente + assembly 'camino'.\nNO genera la rasante: debe existir en el modelo.",
+      "Description": "Crea corredor vial. Usa rasante existente + assembly camino. NO genera rasante.",
       "Name": "PASO 4: Crear Corredor",
-      "X": 500,
-      "Y": 840,
-      "Script": "# ==========================================================\n# PASO 4: Crear corredor vial\n# Civil 3D 2026 — Dynamo IronPython 2.7\n# ==========================================================\nimport clr, sys\n\nclr.AddReference('AcMgd')\nclr.AddReference('AcDbMgd')\nclr.AddReference('AeccDbMgd')\n\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Corridor\n\n# --- Entradas ---\nalignment_id  = IN[0]\nprofile_name  = IN[1]  # Nombre de la rasante existente\nassembly_name = IN[2]  # 'camino'\nsello_id      = IN[3]  # Superficie objetivo (target)\n# IN[4] = pv_id — solo para forzar orden de ejecución\n\ndoc       = Application.DocumentManager.MdiActiveDocument\ndb        = doc.Database\ncivil_doc = CivilApplication.ActiveDocument\n\ndef get_style(collection, *names):\n    for n in names:\n        try: return collection[n]\n        except: pass\n    for sid in collection: return sid\n\ndef find_profile(alignment_id, name):\n    \"\"\"Busca rasante por nombre (insensible a mayúsculas).\"\"\"\n    with db.TransactionManager.StartTransaction() as tr:\n        ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n        found = None\n        all_names = []\n        for pid in ali.GetProfileIds():\n            p = tr.GetObject(pid, OpenMode.ForRead)\n            all_names.append(p.Name)\n            if p.Name.upper() == name.upper():\n                found = pid\n        tr.Commit()\n    return found, all_names\n\ndef find_assembly(name):\n    \"\"\"\n    Busca assembly por nombre.\n    NOTA CRÍTICA: En Civil 3D español el assembly puede llamarse 'camino'\n    con o sin acento, o puede tener un prefijo. Se hace búsqueda flexible.\n    \"\"\"\n    import unicodedata\n    def norm(s):\n        return ''.join(\n            c for c in unicodedata.normalize('NFD', unicode(s))\n            if unicodedata.category(c) != 'Mn'\n        ).upper()\n\n    target = norm(name)\n    with db.TransactionManager.StartTransaction() as tr:\n        for asm_id in civil_doc.GetAssemblyIds():\n            asm = tr.GetObject(asm_id, OpenMode.ForRead)\n            if norm(asm.Name) == target:\n                tr.Commit()\n                return asm_id\n        tr.Commit()\n    return None\n\ntry:\n    # Buscar rasante\n    profile_id, available_profiles = find_profile(alignment_id, profile_name)\n    if profile_id is None:\n        raise ValueError(\n            u\"Rasante '{}' no encontrada en el alineamiento. \"\n            u\"Perfiles disponibles: {}\".format(profile_name, available_profiles)\n        )\n\n    # Buscar assembly 'camino'\n    assembly_id = find_assembly(assembly_name)\n    if assembly_id is None:\n        raise ValueError(\n            u\"Assembly '{}' no encontrado. \"\n            u\"Verificar que esté insertado en el modelo (Toolspace > Assemblies).\"\n            .format(assembly_name)\n        )\n\n    style_id = get_style(\n        civil_doc.Styles.CorridorStyles,\n        'Standard', u'Estándar', 'Estandar'\n    )\n\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            # Crear corredor\n            # NOTA: La firma exacta de Corridor.Create varía entre versiones.\n            # Civil 3D 2024-2026 inglés:\n            # Corridor.Create(civilDoc, name, alignId, profileId, assemblyId,\n            #                 targetSurfaceId, styleId)\n            # Si targetSurface es None → pasar ObjectId.Null\n            target_surf = sello_id if sello_id else ObjectId.Null\n\n            corridor_id = Corridor.Create(\n                civil_doc,\n                'CORREDOR-EJE',\n                alignment_id,\n                profile_id,\n                assembly_id,\n                target_surf,\n                style_id\n            )\n\n            corridor = tr.GetObject(corridor_id, OpenMode.ForWrite)\n\n            # Configurar la región para abarcar todo el alineamiento\n            ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n            try:\n                baseline = corridor.Baselines[0]\n                region   = baseline.BaselineRegions[0]\n                region.StartStation = ali.StartingStation\n                region.EndStation   = ali.EndingStation\n            except Exception as e_region:\n                pass  # Si falla, Civil 3D usa la extensión completa por defecto\n\n            corridor.Rebuild()\n            tr.Commit()\n\n    log_msg = u'[OK] Corredor CORREDOR-EJE creado con assembly {} y rasante {}.'.format(\n        assembly_name, profile_name\n    )\n    OUT = [corridor_id, log_msg]\n\nexcept Exception as ex:\n    OUT = [None, u'[ERROR PASO 4] ' + str(ex)]"
+      "X": 520,
+      "Y": 880,
+      "Script": "import clr, sys\nclr.AddReference('AcMgd')\nclr.AddReference('AcDbMgd')\nclr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import *\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\nfrom Autodesk.Civil.DatabaseServices import Corridor\n\nalignment_id  = IN[0]\nprofile_name  = IN[1]\nassembly_name = IN[2]\nsello_id      = IN[3]\n# IN[4] = pv_id — forza orden de ejecucion\n\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\ndef sty(col, *ns):\n    for n in ns:\n        try: return col[n]\n        except: pass\n    for s in col: return s\n\ndef find_profile(ali_id, name):\n    with db.TransactionManager.StartTransaction() as tr:\n        ali = tr.GetObject(ali_id, OpenMode.ForRead)\n        found = None\n        names = []\n        for pid in ali.GetProfileIds():\n            p = tr.GetObject(pid, OpenMode.ForRead)\n            names.append(p.Name)\n            if p.Name.upper() == name.upper(): found = pid\n        tr.Commit()\n    return found, names\n\ndef find_assembly(name):\n    import unicodedata\n    def n(s):\n        return ''.join(c for c in unicodedata.normalize('NFD', unicode(s)) if unicodedata.category(c) != 'Mn').upper()\n    tgt = n(name)\n    with db.TransactionManager.StartTransaction() as tr:\n        for aid in cdoc.GetAssemblyIds():\n            a = tr.GetObject(aid, OpenMode.ForRead)\n            if n(a.Name) == tgt:\n                tr.Commit()\n                return aid\n        tr.Commit()\n    return None\n\ntry:\n    prof_id, avail = find_profile(alignment_id, profile_name)\n    if prof_id is None:\n        raise ValueError(u'Profile not found: ' + profile_name + u'. Available: ' + str(avail))\n    asm_id = find_assembly(assembly_name)\n    if asm_id is None:\n        raise ValueError(u'Assembly not found: ' + assembly_name)\n    cst = sty(cdoc.Styles.CorridorStyles, 'Standard', u'Estandar')\n    tsf = sello_id if sello_id else ObjectId.Null\n    with doc.LockDocument():\n        with db.TransactionManager.StartTransaction() as tr:\n            cor_id = Corridor.Create(cdoc, 'CORREDOR-EJE', alignment_id, prof_id, asm_id, tsf, cst)\n            cor = tr.GetObject(cor_id, OpenMode.ForWrite)\n            ali = tr.GetObject(alignment_id, OpenMode.ForRead)\n            try:\n                reg = cor.Baselines[0].BaselineRegions[0]\n                reg.StartStation = ali.StartingStation\n                reg.EndStation   = ali.EndingStation\n            except: pass\n            cor.Rebuild()\n            tr.Commit()\n    OUT = [cor_id, u'[OK] Corridor created. Assembly=' + assembly_name + ', Profile=' + profile_name]\nexcept Exception as ex:\n    OUT = [None, '[ERR P4] ' + str(ex)]\n"
     },
-
     {
       "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
       "NodeType": "ExtensionNode",
-      "Id": "node-watch-logs",
+      "Id": "f0000001-0000-0000-0000-000000000000",
       "Inputs": [
-        { "Id": "in-watch", "Name": "", "Description": "Variable", "UsingDefaultValue": false, "Level": 2, "UseLevels": false, "KeepListStructure": false }
+        {
+          "Id": "f0000001-0000-0000-0000-000000000000-i0",
+          "Name": "",
+          "Description": "",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
       ],
       "Outputs": [
-        { "Id": "out-watch", "Name": "", "Description": "Variable", "Type": "var", "Type2": "var", "Index": 0 }
+        {
+          "Id": "f0000001-0000-0000-0000-000000000000-o0",
+          "Name": "",
+          "Description": "",
+          "Type": "var",
+          "Type2": "var",
+          "Index": 0
+        }
       ],
       "Replication": "Disabled",
-      "Description": "Visualizar logs de ejecución",
+      "Description": "Resultado final — ver logs de cada paso",
       "Name": "Watch: Resultado Final",
-      "X": 1100,
-      "Y": 420
+      "X": 1050,
+      "Y": 450
     }
-
   ],
-
   "Connectors": [
-    { "Start": "node-layer-name",       "End": "node-paso1-alineamiento", "StartIndex": 0, "EndIndex": 0 },
-    { "Start": "node-ali-name",         "End": "node-paso1-alineamiento", "StartIndex": 0, "EndIndex": 1 },
-
-    { "Start": "node-tn-name",          "End": "node-paso2-sello",        "StartIndex": 0, "EndIndex": 0 },
-    { "Start": "node-sello-name",       "End": "node-paso2-sello",        "StartIndex": 0, "EndIndex": 1 },
-    { "Start": "node-delta-input",      "End": "node-paso2-sello",        "StartIndex": 0, "EndIndex": 2 },
-    { "Start": "node-paso1-alineamiento","End": "node-paso2-sello",       "StartIndex": 0, "EndIndex": 3 },
-
-    { "Start": "node-paso1-alineamiento","End": "node-paso3-perfil",      "StartIndex": 0, "EndIndex": 0 },
-    { "Start": "node-paso2-sello",      "End": "node-paso3-perfil",       "StartIndex": 1, "EndIndex": 1 },
-    { "Start": "node-paso2-sello",      "End": "node-paso3-perfil",       "StartIndex": 0, "EndIndex": 2 },
-
-    { "Start": "node-paso1-alineamiento","End": "node-paso4-corredor",    "StartIndex": 0, "EndIndex": 0 },
-    { "Start": "node-profile-name",     "End": "node-paso4-corredor",     "StartIndex": 0, "EndIndex": 1 },
-    { "Start": "node-assembly-name",    "End": "node-paso4-corredor",     "StartIndex": 0, "EndIndex": 2 },
-    { "Start": "node-paso2-sello",      "End": "node-paso4-corredor",     "StartIndex": 0, "EndIndex": 3 },
-    { "Start": "node-paso3-perfil",     "End": "node-paso4-corredor",     "StartIndex": 0, "EndIndex": 4 },
-
-    { "Start": "node-paso4-corredor",   "End": "node-watch-logs",         "StartIndex": 1, "EndIndex": 0 }
+    {
+      "Start": "d0000002-0000-0000-0000-000000000000",
+      "End": "e0000001-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 0
+    },
+    {
+      "Start": "d0000005-0000-0000-0000-000000000000",
+      "End": "e0000001-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 1
+    },
+    {
+      "Start": "d0000003-0000-0000-0000-000000000000",
+      "End": "e0000002-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 0
+    },
+    {
+      "Start": "d0000004-0000-0000-0000-000000000000",
+      "End": "e0000002-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 1
+    },
+    {
+      "Start": "d0000001-0000-0000-0000-000000000000",
+      "End": "e0000002-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 2
+    },
+    {
+      "Start": "e0000001-0000-0000-0000-000000000000",
+      "End": "e0000002-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 3
+    },
+    {
+      "Start": "e0000001-0000-0000-0000-000000000000",
+      "End": "e0000003-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 0
+    },
+    {
+      "Start": "e0000002-0000-0000-0000-000000000000",
+      "End": "e0000003-0000-0000-0000-000000000000",
+      "StartIndex": 1,
+      "EndIndex": 1
+    },
+    {
+      "Start": "e0000002-0000-0000-0000-000000000000",
+      "End": "e0000003-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 2
+    },
+    {
+      "Start": "e0000001-0000-0000-0000-000000000000",
+      "End": "e0000004-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 0
+    },
+    {
+      "Start": "d0000006-0000-0000-0000-000000000000",
+      "End": "e0000004-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 1
+    },
+    {
+      "Start": "d0000007-0000-0000-0000-000000000000",
+      "End": "e0000004-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 2
+    },
+    {
+      "Start": "e0000002-0000-0000-0000-000000000000",
+      "End": "e0000004-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 3
+    },
+    {
+      "Start": "e0000003-0000-0000-0000-000000000000",
+      "End": "e0000004-0000-0000-0000-000000000000",
+      "StartIndex": 0,
+      "EndIndex": 4
+    },
+    {
+      "Start": "e0000004-0000-0000-0000-000000000000",
+      "End": "f0000001-0000-0000-0000-000000000000",
+      "StartIndex": 1,
+      "EndIndex": 0
+    }
   ],
-
   "Dependencies": [],
   "NodeLibraryDependencies": [],
   "Thumbnail": "",
@@ -255,8 +566,13 @@
       "Data": {}
     }
   ],
-  "Author": "Script generado para Civil 3D 2026",
-  "Linting": { "activeLinter": "None", "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a", "warningCount": 0, "errorCount": 0 },
+  "Author": "Civil 3D 2026 Road Design Automation",
+  "Linting": {
+    "activeLinter": "None",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
   "Bindings": [],
   "View": {
     "Dynamo": {
@@ -269,51 +585,193 @@
     },
     "Camera": {
       "Name": "_Background Preview",
-      "EyeX": -17.0, "EyeY": 24.0, "EyeZ": 50.0,
-      "LookX": 12.0, "LookY": -13.0, "LookZ": -58.0,
-      "UpX": 0.0, "UpY": 1.0, "UpZ": 0.0
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
     },
     "ConnectorPins": [],
     "NodeViews": [
-      { "Name": "Delta (metros)",             "ShowGeometry": true, "Id": "node-delta-input",         "IsSetAsInput": true,  "IsSetAsOutput": false, "Excluded": false, "X": 0,    "Y": 0   },
-      { "Name": "Capa Eje de Camino",          "ShowGeometry": true, "Id": "node-layer-name",          "IsSetAsInput": true,  "IsSetAsOutput": false, "Excluded": false, "X": 0,    "Y": 120 },
-      { "Name": "Nombre Superficie TN",        "ShowGeometry": true, "Id": "node-tn-name",             "IsSetAsInput": true,  "IsSetAsOutput": false, "Excluded": false, "X": 0,    "Y": 240 },
-      { "Name": "Nombre Superficie SELLO",     "ShowGeometry": true, "Id": "node-sello-name",          "IsSetAsInput": true,  "IsSetAsOutput": false, "Excluded": false, "X": 0,    "Y": 360 },
-      { "Name": "Nombre Alineamiento",         "ShowGeometry": true, "Id": "node-ali-name",            "IsSetAsInput": true,  "IsSetAsOutput": false, "Excluded": false, "X": 0,    "Y": 480 },
-      { "Name": "Nombre Rasante (existente)",  "ShowGeometry": true, "Id": "node-profile-name",        "IsSetAsInput": true,  "IsSetAsOutput": false, "Excluded": false, "X": 0,    "Y": 600 },
-      { "Name": "Nombre Assembly 'camino'",    "ShowGeometry": true, "Id": "node-assembly-name",       "IsSetAsInput": true,  "IsSetAsOutput": false, "Excluded": false, "X": 0,    "Y": 720 },
-      { "Name": "PASO 1: Crear Alineamiento",  "ShowGeometry": true, "Id": "node-paso1-alineamiento",  "IsSetAsInput": false, "IsSetAsOutput": false, "Excluded": false, "X": 500,  "Y": 0   },
-      { "Name": "PASO 2: Crear Superficie SELLO","ShowGeometry": true,"Id": "node-paso2-sello",        "IsSetAsInput": false, "IsSetAsOutput": false, "Excluded": false, "X": 500,  "Y": 280 },
-      { "Name": "PASO 3: Crear Vista de Perfil","ShowGeometry": true, "Id": "node-paso3-perfil",       "IsSetAsInput": false, "IsSetAsOutput": false, "Excluded": false, "X": 500,  "Y": 560 },
-      { "Name": "PASO 4: Crear Corredor",      "ShowGeometry": true, "Id": "node-paso4-corredor",      "IsSetAsInput": false, "IsSetAsOutput": false, "Excluded": false, "X": 500,  "Y": 840 },
-      { "Name": "Watch: Resultado Final",      "ShowGeometry": true, "Id": "node-watch-logs",          "IsSetAsInput": false, "IsSetAsOutput": true,  "Excluded": false, "X": 1100, "Y": 420 }
+      {
+        "Name": "Delta (metros)",
+        "ShowGeometry": true,
+        "Id": "d0000001-0000-0000-0000-000000000000",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 0,
+        "Y": 0
+      },
+      {
+        "Name": "Capa Eje de Camino",
+        "ShowGeometry": true,
+        "Id": "d0000002-0000-0000-0000-000000000000",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 0,
+        "Y": 120
+      },
+      {
+        "Name": "Nombre Superficie TN",
+        "ShowGeometry": true,
+        "Id": "d0000003-0000-0000-0000-000000000000",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 0,
+        "Y": 240
+      },
+      {
+        "Name": "Nombre Superficie SELLO",
+        "ShowGeometry": true,
+        "Id": "d0000004-0000-0000-0000-000000000000",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 0,
+        "Y": 360
+      },
+      {
+        "Name": "Nombre Alineamiento",
+        "ShowGeometry": true,
+        "Id": "d0000005-0000-0000-0000-000000000000",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 0,
+        "Y": 480
+      },
+      {
+        "Name": "Nombre Rasante (existente)",
+        "ShowGeometry": true,
+        "Id": "d0000006-0000-0000-0000-000000000000",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 0,
+        "Y": 600
+      },
+      {
+        "Name": "Nombre Assembly camino",
+        "ShowGeometry": true,
+        "Id": "d0000007-0000-0000-0000-000000000000",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 0,
+        "Y": 720
+      },
+      {
+        "Name": "PASO 1: Crear Alineamiento",
+        "ShowGeometry": true,
+        "Id": "e0000001-0000-0000-0000-000000000000",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 520,
+        "Y": 0
+      },
+      {
+        "Name": "PASO 2: Crear Superficie SELLO",
+        "ShowGeometry": true,
+        "Id": "e0000002-0000-0000-0000-000000000000",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 520,
+        "Y": 300
+      },
+      {
+        "Name": "PASO 3: Crear Vista de Perfil",
+        "ShowGeometry": true,
+        "Id": "e0000003-0000-0000-0000-000000000000",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 520,
+        "Y": 600
+      },
+      {
+        "Name": "PASO 4: Crear Corredor",
+        "ShowGeometry": true,
+        "Id": "e0000004-0000-0000-0000-000000000000",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "X": 520,
+        "Y": 880
+      },
+      {
+        "Name": "Watch: Resultado Final",
+        "ShowGeometry": true,
+        "Id": "f0000001-0000-0000-0000-000000000000",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Excluded": false,
+        "X": 1050,
+        "Y": 450
+      }
     ],
     "Annotations": [
       {
         "Id": "ann-inputs",
         "Title": "ENTRADAS — Ajustar antes de ejecutar",
-        "DescriptionText": "Delta: valor de decapado (0.00–0.60 m). Nombres: deben coincidir exactamente con el modelo.",
+        "DescriptionText": "Delta: 0.00-0.60 m. Nombres: coincidir exactamente con el modelo.",
         "IsExpanded": true,
         "WidthAdjustment": 0.0,
         "HeightAdjustment": 0.0,
-        "Nodes": ["node-delta-input","node-layer-name","node-tn-name","node-sello-name","node-ali-name","node-profile-name","node-assembly-name"],
-        "Left": -20.0, "Top": -50.0, "Width": 380.0, "Height": 850.0,
-        "FontSize": 36.0, "InitialTop": 0.0, "InitialHeight": 145.0,
-        "TextblockHeight": 43.0, "Background": "#FFC1D676"
+        "Nodes": [
+          "d0000001-0000-0000-0000-000000000000",
+          "d0000002-0000-0000-0000-000000000000",
+          "d0000003-0000-0000-0000-000000000000",
+          "d0000004-0000-0000-0000-000000000000",
+          "d0000005-0000-0000-0000-000000000000",
+          "d0000006-0000-0000-0000-000000000000",
+          "d0000007-0000-0000-0000-000000000000"
+        ],
+        "Left": -20.0,
+        "Top": -50.0,
+        "Width": 380.0,
+        "Height": 860.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FFC1D676"
       },
       {
         "Id": "ann-pasos",
-        "Title": "FLUJO DE AUTOMATIZACIÓN (ejecutar en modo Manual)",
-        "DescriptionText": "Los pasos se ejecutan en orden gracias a las dependencias de Wire. NO cambiar a modo Automático.",
+        "Title": "FLUJO DE AUTOMATIZACION (modo Manual)",
+        "DescriptionText": "Los pasos se ejecutan en orden por dependencias de Wire. NO usar modo Automatico.",
         "IsExpanded": true,
         "WidthAdjustment": 0.0,
         "HeightAdjustment": 0.0,
-        "Nodes": ["node-paso1-alineamiento","node-paso2-sello","node-paso3-perfil","node-paso4-corredor","node-watch-logs"],
-        "Left": 480.0, "Top": -50.0, "Width": 750.0, "Height": 1050.0,
-        "FontSize": 36.0, "InitialTop": 0.0, "InitialHeight": 145.0,
-        "TextblockHeight": 43.0, "Background": "#FFD4E4F7"
+        "Nodes": [
+          "e0000001-0000-0000-0000-000000000000",
+          "e0000002-0000-0000-0000-000000000000",
+          "e0000003-0000-0000-0000-000000000000",
+          "e0000004-0000-0000-0000-000000000000",
+          "f0000001-0000-0000-0000-000000000000"
+        ],
+        "Left": 500.0,
+        "Top": -50.0,
+        "Width": 730.0,
+        "Height": 1060.0,
+        "FontSize": 36.0,
+        "InitialTop": 0.0,
+        "InitialHeight": 145.0,
+        "TextblockHeight": 43.0,
+        "Background": "#FFD4E4F7"
       }
     ],
-    "X": -200.0, "Y": -100.0, "Zoom": 0.7
+    "X": -150.0,
+    "Y": -80.0,
+    "Zoom": 0.72
   }
 }
