@@ -1,21 +1,19 @@
 # =============================================================================
-# platforms.py  —  Plataformas integradas al corredor vial Civil 3D 2026
+# platforms.py  —  Plataformas integradas al corredor vial
+#                  Compatible: Civil 3D 2020-2026  |  IronPython 2.7 (Dynamo)
 #
-# RESTRICCIÓN PRINCIPAL:
-#   Acuerdo vertical KV = 800 m (parámetro mínimo de curva parabólica) en
-#   la entrada Y salida de cada plataforma.
-#   Fórmula: L_min = KV * |Δi| / 100
-#   donde Δi = diferencia algebraica de pendientes en %, L en metros.
-#   Ejemplo: pendiente camino 6%, plataforma 2% → Δi=4% → L_min = 32 m
+# DISEÑO PORTÁTIL:
+#   Todos los parámetros de proyecto se pasan como argumentos de función.
+#   No hay ningún valor hardcodeado dependiente del proyecto.
+#   Los nombres de superficies, perfiles, assemblies y capas se reciben
+#   siempre como parámetros con valores por defecto descriptivos.
+#
+# RESTRICCIÓN ACUERDO VERTICAL:
+#   L = KV × |Δi| / 100   (KV en m, Δi en %, L en m)
+#   KV = 800 m (radio equivalente de parábola vertical) — configurable.
 #
 # COMPENSACIÓN DE TIERRAS:
-#   Para cada plataforma se busca la cota óptima que equilibra corte y relleno
-#   (método de bisección sobre secciones transversales cada 5 m por defecto).
-#
-# INTEGRACIÓN AL CORREDOR:
-#   1. Se modifican los PIPs del perfil de rasante para incluir los acuerdos.
-#   2. Se crea una región del corredor con assembly de plataforma.
-#   3. Se crean feature lines de borde de calzada / talud de plataforma.
+#   Bisección numérica para hallar la cota donde corte = relleno.
 # =============================================================================
 
 from __future__ import annotations
@@ -30,8 +28,9 @@ from Autodesk.AutoCAD.ApplicationServices import Application
 from Autodesk.AutoCAD.DatabaseServices import (
     Transaction, BlockTable, BlockTableRecord,
     OpenMode, ObjectId,
+    LayerTable, LayerTableRecord,
 )
-from Autodesk.AutoCAD.Geometry import Point3d, Point2d, Vector3d
+from Autodesk.AutoCAD.Geometry import Point3d, Vector3d
 
 from Autodesk.Civil.ApplicationServices import CivilApplication
 from Autodesk.Civil.DatabaseServices import (
@@ -40,92 +39,105 @@ from Autodesk.Civil.DatabaseServices import (
 )
 
 # ---------------------------------------------------------------------------
-# Constantes de diseño
+# Defaults documentados — todos sobreescribibles por el llamador
 # ---------------------------------------------------------------------------
-KV_DEFAULT        = 800.0   # Radio equiv. curva vertical (m) — mínimo normativo
-PLATFORM_SLOPE    = 2.0     # Pendiente long. de drenaje en plataforma (%)
-CROSS_SLOPE_PLT   = 2.5     # Bombeo transversal de la plataforma (%)
-SECTION_SPACING   = 5.0     # Espaciado entre secciones para cálculo de volumen (m)
-BISECT_TOLERANCE  = 0.01    # Tolerancia de compensación (m³/m de longitud)
-BISECT_MAX_ITER   = 40
+KV_DEFAULT           = 800.0   # Radio equiv. curva vertical (m)
+PLATFORM_SLOPE_PCT   = 2.0     # Pendiente long. de drenaje (%)
+CROSS_SLOPE_PCT      = 2.5     # Bombeo transversal (%)
+SECTION_SPACING_M    = 5.0     # Espaciado entre secciones de volumen (m)
+ROAD_HALF_WIDTH_M    = 4.0     # Semi-ancho de calzada por defecto (m)
+BISECT_TOLERANCE     = 0.01    # Tolerancia balance m³/m de longitud
+BISECT_MAX_ITER      = 40
+LAYER_PLATFORM_FL    = "C-ROAD-PLATFORM"   # Capa de feature lines
 
 
-# ---------------------------------------------------------------------------
-# Clase Platform
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# CLASE PRINCIPAL
+# ===========================================================================
 
 class Platform:
     """
-    Describe una plataforma (explanada) adyacente al corredor vial.
+    Define una plataforma (explanada) adyacente al corredor.
+
+    Todos los parámetros de diseño se reciben explícitamente para que
+    el objeto sea independiente de cualquier proyecto concreto.
 
     Parámetros
     ----------
-    name        : identificador único (ej. "PLT-01")
-    pk_start    : estación de inicio de la plataforma (m)
-    pk_end      : estación de fin de la plataforma (m)
-    width       : ancho de la plataforma medido desde el borde de calzada (m)
-    side        : 'right' | 'left' | 'both'
-    slope_pct   : pendiente longitudinal de la plataforma (%, default 2%)
-    elevation   : cota de rasante en pk_start (None = calcular óptima)
+    name         : identificador único, ej. "PLT-01"
+    pk_start     : estación de inicio (m)
+    pk_end       : estación de fin (m)
+    width        : ancho desde borde de calzada (m)
+    side         : 'right' | 'left' | 'both'
+    slope_pct    : pendiente longitudinal de la plataforma (%), default 2%
+    elevation    : cota forzada en pk_start (None = calcular óptima)
     """
 
-    def __init__(self, name: str, pk_start: float, pk_end: float,
-                 width: float, side: str = 'right',
-                 slope_pct: float = PLATFORM_SLOPE,
-                 elevation: float | None = None):
+    __slots__ = (
+        'name', 'pk_start', 'pk_end', 'width', 'side',
+        'slope_pct', 'elevation',
+        'optimal_elevation', 'L_entry', 'L_exit',
+        'grade_entry_road', 'grade_exit_road',
+        'volume_cut', 'volume_fill', 'balance',
+    )
+
+    def __init__(self, name, pk_start, pk_end, width,
+                 side='right', slope_pct=PLATFORM_SLOPE_PCT,
+                 elevation=None):
         if pk_end <= pk_start:
-            raise ValueError(f"[{name}] pk_end ({pk_end}) debe ser > pk_start ({pk_start})")
+            raise ValueError(
+                "[%s] pk_end (%s) debe ser mayor que pk_start (%s)"
+                % (name, pk_end, pk_start)
+            )
         if width <= 0:
-            raise ValueError(f"[{name}] ancho debe ser positivo")
+            raise ValueError("[%s] ancho debe ser positivo" % name)
         if side not in ('right', 'left', 'both'):
-            raise ValueError(f"[{name}] side debe ser 'right', 'left' o 'both'")
+            raise ValueError("[%s] side debe ser 'right', 'left' o 'both'" % name)
 
-        self.name       = name
-        self.pk_start   = pk_start
-        self.pk_end     = pk_end
-        self.width      = width
-        self.side       = side
-        self.slope_pct  = slope_pct
-        self.elevation  = elevation     # cota en pk_start; None → calcular
+        self.name        = name
+        self.pk_start    = float(pk_start)
+        self.pk_end      = float(pk_end)
+        self.width       = float(width)
+        self.side        = side
+        self.slope_pct   = float(slope_pct)
+        self.elevation   = float(elevation) if elevation is not None else None
 
-        # Resultados calculados
-        self.optimal_elevation   = None   # m.s.n.m.
-        self.L_entry             = 0.0    # longitud acuerdo entrada (m)
-        self.L_exit              = 0.0    # longitud acuerdo salida (m)
-        self.grade_entry_road    = 0.0    # pendiente rasante camino en pk_start (%)
-        self.grade_exit_road     = 0.0    # pendiente rasante camino en pk_end (%)
-        self.volume_cut          = 0.0    # m³
-        self.volume_fill         = 0.0    # m³
-        self.balance             = 0.0    # cut - fill (m³); 0 = compensado
+        self.optimal_elevation  = None
+        self.L_entry            = 0.0
+        self.L_exit             = 0.0
+        self.grade_entry_road   = 0.0
+        self.grade_exit_road    = 0.0
+        self.volume_cut         = 0.0
+        self.volume_fill        = 0.0
+        self.balance            = 0.0
 
     @property
-    def length(self) -> float:
+    def length(self):
         return self.pk_end - self.pk_start
 
     @property
-    def active_elevation(self) -> float | None:
-        """Cota efectiva: la explícita o la óptima calculada."""
+    def active_elevation(self):
         return self.elevation if self.elevation is not None else self.optimal_elevation
 
     def __repr__(self):
-        return (f"Platform({self.name!r}, pk={self.pk_start:.1f}-{self.pk_end:.1f}, "
-                f"L={self.length:.1f}m, w={self.width}m, side={self.side})")
+        return (
+            "Platform(%r, pk=%.1f-%.1f, L=%.1fm, w=%.1fm, side=%s)"
+            % (self.name, self.pk_start, self.pk_end, self.length,
+               self.width, self.side)
+        )
 
 
-# ---------------------------------------------------------------------------
-# 1. ACUERDOS VERTICALES (KV = 800)
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 1. ACUERDOS VERTICALES
+# ===========================================================================
 
-def compute_kv_transition(grade_road_pct: float, grade_platform_pct: float,
-                           kv: float = KV_DEFAULT) -> float:
+def compute_kv_transition(grade_road_pct, grade_platform_pct,
+                           kv=KV_DEFAULT):
     """
-    Longitud mínima del acuerdo parabólico de transición entre la rasante
-    del camino y la pendiente de la plataforma.
+    L_acuerdo = KV × |Δi| / 100   (metros)
 
-    L = KV × |Δi| / 100   (Δi en %, L en m)
-
-    KV = 800 m actúa como radio equivalente de la parábola vertical.
-    Si no hay cambio de pendiente significativo devuelve 0.
+    KV : radio equivalente de la parábola vertical (m). Default 800 m.
+    Δi : diferencia algebraica de pendientes en %.
     """
     delta_i = abs(grade_road_pct - grade_platform_pct)
     if delta_i < 1e-4:
@@ -133,69 +145,50 @@ def compute_kv_transition(grade_road_pct: float, grade_platform_pct: float,
     return kv * delta_i / 100.0
 
 
-def check_kv_feasibility(platform: Platform, kv: float = KV_DEFAULT) -> dict:
+def check_kv_feasibility(platform, kv=KV_DEFAULT):
     """
-    Verifica que los acuerdos verticales de entrada y salida quepan
-    físicamente en el espacio disponible antes/después de la plataforma.
-
-    Retorna dict con claves: 'ok', 'L_entry', 'L_exit', 'warnings'
+    Calcula longitudes de acuerdo de entrada y salida y emite avisos
+    si resultan mayores de 200 m.
+    Retorna dict: {'ok', 'L_entry', 'L_exit', 'warnings'}
     """
     warnings = []
-
-    # Longitudes de acuerdo calculadas
     L_en = compute_kv_transition(platform.grade_entry_road, platform.slope_pct, kv)
     L_ex = compute_kv_transition(platform.grade_exit_road,  platform.slope_pct, kv)
 
     platform.L_entry = L_en
     platform.L_exit  = L_ex
 
-    # El acuerdo se centra en el PIP → necesita L/2 antes y L/2 después del PIP
-    # PIP de entrada está en pk_start → necesita L_en/2 antes de pk_start (en camino)
-    # PIP de salida está en pk_end   → necesita L_ex/2 después de pk_end  (en camino)
-    # No hay restricción de longitud mínima de plataforma para alojar los acuerdos
-    # porque los acuerdos se ubican en el camino, no en la plataforma.
-
     if L_en > 200:
         warnings.append(
-            f"Acuerdo entrada {L_en:.1f} m es largo — "
-            f"Δi={abs(platform.grade_entry_road - platform.slope_pct):.2f}%"
+            "%s: acuerdo entrada %.1fm — Δi=%.2f%% (reducir KV o "
+            "aumentar pendiente de plataforma)" % (
+                platform.name, L_en,
+                abs(platform.grade_entry_road - platform.slope_pct))
         )
     if L_ex > 200:
         warnings.append(
-            f"Acuerdo salida {L_ex:.1f} m es largo — "
-            f"Δi={abs(platform.grade_exit_road - platform.slope_pct):.2f}%"
+            "%s: acuerdo salida %.1fm — Δi=%.2f%%" % (
+                platform.name, L_ex,
+                abs(platform.grade_exit_road - platform.slope_pct))
         )
 
-    return {
-        'ok':       True,
-        'L_entry':  L_en,
-        'L_exit':   L_ex,
-        'warnings': warnings,
-    }
+    return {'ok': True, 'L_entry': L_en, 'L_exit': L_ex, 'warnings': warnings}
 
 
-# ---------------------------------------------------------------------------
-# 2. PENDIENTE DE LA RASANTE EN UNA ESTACIÓN
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 2. UTILIDADES DE ALINEAMIENTO Y SUPERFICIE
+# ===========================================================================
 
-def _get_profile_elevation(alignment_id: ObjectId, profile_id: ObjectId,
-                            station: float) -> float:
-    """Devuelve la cota (m) de la rasante en la estación dada."""
-    db  = Application.DocumentManager.MdiActiveDocument.Database
-    with db.TransactionManager.StartTransaction() as tr:
-        prof = tr.GetObject(profile_id, OpenMode.ForRead)
-        elev = prof.ElevationAt(station)
-        tr.Commit()
-    return elev
+def _db():
+    return Application.DocumentManager.MdiActiveDocument.Database
 
 
-def get_road_grade_at(alignment_id: ObjectId, profile_id: ObjectId,
-                       station: float, delta: float = 0.5) -> float:
+def get_road_grade_at(alignment_id, profile_id, station, delta=0.5):
     """
-    Calcula la pendiente de la rasante en una estación por diferencia finita
-    centrada (Δs = delta metros).  Resultado en %.
+    Pendiente de la rasante en una estación (%).
+    delta : semiintervalo para diferencia finita centrada (m).
     """
-    db  = Application.DocumentManager.MdiActiveDocument.Database
+    db = _db()
     with db.TransactionManager.StartTransaction() as tr:
         prof = tr.GetObject(profile_id, OpenMode.ForRead)
         ali  = tr.GetObject(alignment_id, OpenMode.ForRead)
@@ -204,19 +197,13 @@ def get_road_grade_at(alignment_id: ObjectId, profile_id: ObjectId,
         e0   = prof.ElevationAt(s0)
         e1   = prof.ElevationAt(s1)
         tr.Commit()
-    return 100.0 * (e1 - e0) / (s1 - s0)
+    ds = s1 - s0
+    return 100.0 * (e1 - e0) / ds if ds > 1e-6 else 0.0
 
 
-# ---------------------------------------------------------------------------
-# 3. SUPERFICIE TN — COTA EN COORDENADAS XY
-# ---------------------------------------------------------------------------
-
-def _get_surface_elev_at_xy(surface_id: ObjectId, x: float, y: float) -> float | None:
-    """
-    Devuelve la cota del TIN en el punto (x, y).
-    Retorna None si el punto cae fuera del TIN.
-    """
-    db  = Application.DocumentManager.MdiActiveDocument.Database
+def _surface_elev_at_xy(surface_id, x, y):
+    """Cota TIN en (x, y). Devuelve None si el punto cae fuera del TIN."""
+    db = _db()
     with db.TransactionManager.StartTransaction() as tr:
         surf = tr.GetObject(surface_id, OpenMode.ForRead)
         try:
@@ -228,139 +215,190 @@ def _get_surface_elev_at_xy(surface_id: ObjectId, x: float, y: float) -> float |
             return None
 
 
-def _alignment_point_at_station(alignment_id: ObjectId, station: float,
-                                  offset: float = 0.0):
+def _alignment_xy_at_station(alignment_id, station, offset=0.0):
     """
-    Devuelve (x, y) del punto en el alineamiento a la estación y offset dados.
-    offset > 0 → derecha, offset < 0 → izquierda.
+    Coordenadas (x, y) en el alineamiento a la estación y offset dados.
+    offset > 0 → derecha;  offset < 0 → izquierda.
     """
-    db  = Application.DocumentManager.MdiActiveDocument.Database
+    db = _db()
     with db.TransactionManager.StartTransaction() as tr:
         ali = tr.GetObject(alignment_id, OpenMode.ForRead)
         pt  = Point3d(0, 0, 0)
-        direction = Vector3d(0, 0, 0)
-        ali.PointLocation(station, offset, pt, direction)
+        dir = Vector3d(0, 0, 0)
+        ali.PointLocation(station, offset, pt, dir)
         tr.Commit()
     return pt.X, pt.Y
 
 
-# ---------------------------------------------------------------------------
-# 4. VOLÚMENES DE CORTE Y RELLENO EN UNA PLATAFORMA
-# ---------------------------------------------------------------------------
+def resolve_surface_id(surface_name):
+    """Busca una superficie TIN por nombre (insensible a mayúsculas)."""
+    cdoc = CivilApplication.ActiveDocument
+    db   = _db()
+    for sid in cdoc.GetSurfaceIds():
+        with db.TransactionManager.StartTransaction() as tr:
+            s = tr.GetObject(sid, OpenMode.ForRead)
+            match = s.Name.upper() == surface_name.upper()
+            tr.Commit()
+            if match:
+                return sid
+    raise ValueError("Superficie '%s' no encontrada en el dibujo." % surface_name)
 
-def _cross_section_areas(surface_id: ObjectId, alignment_id: ObjectId,
-                          station: float, platform_elev: float,
-                          width: float, side: str,
-                          road_half_width: float = 4.0,
-                          num_points: int = 12) -> tuple[float, float]:
+
+def resolve_profile_id(alignment_id, profile_name):
+    """Busca un perfil de rasante por nombre dentro del alineamiento."""
+    db = _db()
+    with db.TransactionManager.StartTransaction() as tr:
+        ali = tr.GetObject(alignment_id, OpenMode.ForRead)
+        for pid in ali.GetProfileIds():
+            prof = tr.GetObject(pid, OpenMode.ForRead)
+            if prof.Name.upper() == profile_name.upper():
+                tr.Commit()
+                return pid
+        tr.Commit()
+    return None
+
+
+def list_profile_names(alignment_id):
+    """Lista los nombres de todos los perfiles de un alineamiento."""
+    db    = _db()
+    names = []
+    with db.TransactionManager.StartTransaction() as tr:
+        ali = tr.GetObject(alignment_id, OpenMode.ForRead)
+        for pid in ali.GetProfileIds():
+            prof = tr.GetObject(pid, OpenMode.ForRead)
+            names.append(prof.Name)
+        tr.Commit()
+    return names
+
+
+def resolve_assembly_id(assembly_name):
+    """Busca un assembly por nombre (insensible a mayúsculas)."""
+    from Autodesk.Civil.DatabaseServices import Assembly
+    cdoc = CivilApplication.ActiveDocument
+    db   = _db()
+    for aid in cdoc.GetAssemblyIds():
+        with db.TransactionManager.StartTransaction() as tr:
+            asm = tr.GetObject(aid, OpenMode.ForRead)
+            match = asm.Name.upper() == assembly_name.upper()
+            tr.Commit()
+            if match:
+                return aid
+    raise ValueError(
+        "Assembly '%s' no encontrado. Ensamblajes disponibles: %s"
+        % (assembly_name, _list_assembly_names())
+    )
+
+
+def _list_assembly_names():
+    cdoc = CivilApplication.ActiveDocument
+    db   = _db()
+    names = []
+    for aid in cdoc.GetAssemblyIds():
+        with db.TransactionManager.StartTransaction() as tr:
+            asm = tr.GetObject(aid, OpenMode.ForRead)
+            names.append(asm.Name)
+            tr.Commit()
+    return names
+
+
+def _ensure_layer(db, tr, layer_name):
+    lt = tr.GetObject(db.LayerTableId, OpenMode.ForRead)
+    if not lt.Has(layer_name):
+        lt.UpgradeOpen()
+        ltr       = LayerTableRecord()
+        ltr.Name  = layer_name
+        lt.Add(ltr)
+        tr.AddNewlyCreatedDBObject(ltr, True)
+
+
+# ===========================================================================
+# 3. VOLÚMENES DE CORTE Y RELLENO
+# ===========================================================================
+
+def _cross_section_areas(surface_id, alignment_id, station,
+                          platform_elev, width, side,
+                          road_half_width=ROAD_HALF_WIDTH_M,
+                          n_pts=12):
     """
-    Área de corte y relleno en una sección transversal de plataforma.
-
-    Compara la cota del TIN (terreno natural) contra la cota de la plataforma.
-    Integra con regla del trapecio sobre num_points puntos distribuidos
-    en el ancho de la plataforma.
-
-    road_half_width : semi-ancho del camino existente (m) — se excluye del cómputo
-                      porque ya está dentro del corredor.
+    Áreas de corte y relleno en una sección transversal.
+    Integración trapezoidal entre el TIN y la cota de plataforma.
     """
-    offsets_right = []
-    offsets_left  = []
+    def make_offsets(sign):
+        return [sign * (road_half_width + width * k / n_pts)
+                for k in range(n_pts + 1)]
 
+    groups = []
     if side in ('right', 'both'):
-        for k in range(num_points + 1):
-            off = road_half_width + width * k / num_points
-            offsets_right.append(off)
-
+        groups.append(make_offsets(+1))
     if side in ('left', 'both'):
-        for k in range(num_points + 1):
-            off = -(road_half_width + width * k / num_points)
-            offsets_left.append(off)
+        groups.append(make_offsets(-1))
 
-    all_offsets = offsets_right + offsets_left
+    def integrate(offsets):
+        zs = []
+        for off in offsets:
+            x, y = _alignment_xy_at_station(alignment_id, station, off)
+            zs.append(_surface_elev_at_xy(surface_id, x, y))
 
-    area_cut  = 0.0
-    area_fill = 0.0
-
-    zs = []
-    for off in all_offsets:
-        x, y = _alignment_point_at_station(alignment_id, station, off)
-        z_tn = _get_surface_elev_at_xy(surface_id, x, y)
-        zs.append((off, z_tn))
-
-    # Integración trapecio sobre cada grupo (right / left separados)
-    def integrate_group(pairs):
         cut = fill = 0.0
-        for i in range(len(pairs) - 1):
-            o1, z1 = pairs[i]
-            o2, z2 = pairs[i + 1]
+        for i in range(len(offsets) - 1):
+            o1, z1 = offsets[i], zs[i]
+            o2, z2 = offsets[i + 1], zs[i + 1]
             if z1 is None or z2 is None:
                 continue
-            dw    = abs(o2 - o1)
-            dz1   = platform_elev - z1   # > 0 → relleno, < 0 → corte
-            dz2   = platform_elev - z2
-            # Trapecio: área = dw * (dz1 + dz2) / 2
-            # Si signos mixtos, hay cruce en la sección — tratamiento lineal
-            if dz1 * dz2 >= 0:
-                avg = (dz1 + dz2) / 2.0
-                if avg > 0:
+            dw  = abs(o2 - o1)
+            d1  = platform_elev - z1   # + relleno, - corte
+            d2  = platform_elev - z2
+            if d1 * d2 >= 0:
+                avg = (d1 + d2) / 2.0
+                if avg >= 0:
                     fill += dw * avg
                 else:
                     cut  += dw * abs(avg)
             else:
-                # Cruce: proporcional
-                frac = abs(dz1) / (abs(dz1) + abs(dz2))
-                xc   = o1 + frac * (o2 - o1)
-                w1   = abs(xc - o1)
-                w2   = abs(o2 - xc)
-                if dz1 < 0:
-                    cut  += w1 * abs(dz1) / 2.0
-                    fill += w2 * abs(dz2) / 2.0
+                frac = abs(d1) / (abs(d1) + abs(d2))
+                wA   = dw * frac
+                wB   = dw * (1 - frac)
+                if d1 < 0:
+                    cut  += wA * abs(d1) / 2.0
+                    fill += wB * abs(d2) / 2.0
                 else:
-                    fill += w1 * dz1 / 2.0
-                    cut  += w2 * abs(dz2) / 2.0
+                    fill += wA * d1 / 2.0
+                    cut  += wB * abs(d2) / 2.0
         return cut, fill
 
-    if offsets_right:
-        pairs_r = list(zip(offsets_right, [z for _, z in zs[:len(offsets_right)]]))
-        c, f    = integrate_group(pairs_r)
-        area_cut  += c
-        area_fill += f
-
-    if offsets_left:
-        pairs_l = list(zip(offsets_left, [z for _, z in zs[len(offsets_right):]]))
-        c, f    = integrate_group(pairs_l)
-        area_cut  += c
-        area_fill += f
-
-    return area_cut, area_fill
+    total_cut = total_fill = 0.0
+    for g in groups:
+        c, f = integrate(g)
+        total_cut  += c
+        total_fill += f
+    return total_cut, total_fill
 
 
-def compute_platform_earthwork(surface_id: ObjectId, alignment_id: ObjectId,
-                                platform: Platform,
-                                spacing: float = SECTION_SPACING,
-                                road_half_width: float = 4.0) -> tuple[float, float]:
+def compute_platform_earthwork(surface_id, alignment_id, platform,
+                                road_half_width=ROAD_HALF_WIDTH_M,
+                                spacing=SECTION_SPACING_M):
     """
-    Calcula los volúmenes totales de corte y relleno de la plataforma
-    usando el método de área media entre secciones cada `spacing` metros.
-
-    Retorna (vol_cut, vol_fill) en m³.
+    Volúmenes totales de corte y relleno (m³) por método de área media.
+    Actualiza platform.volume_cut, .volume_fill y .balance.
     """
     elev = platform.active_elevation
     if elev is None:
-        raise ValueError(f"[{platform.name}] Elevación no definida. "
-                         "Llamar find_optimal_elevation() primero.")
+        raise ValueError(
+            "[%s] Sin cota de plataforma. Llamar find_optimal_elevation() primero."
+            % platform.name
+        )
 
-    stations = []
-    s = platform.pk_start
-    while s <= platform.pk_end + 1e-6:
-        stations.append(min(s, platform.pk_end))
-        s += spacing
+    # Construir lista de estaciones equiespaciadas
+    n_steps = max(2, int(math.ceil(platform.length / spacing)) + 1)
+    stations = [
+        platform.pk_start + platform.length * i / (n_steps - 1)
+        for i in range(n_steps)
+    ]
 
     vol_cut = vol_fill = 0.0
     prev_ac = prev_af = None
 
-    for st in stations:
-        # Cota de plataforma en esta estación (inclinación longitudinal)
+    for i, st in enumerate(stations):
         ds      = st - platform.pk_start
         z_plt   = elev + (platform.slope_pct / 100.0) * ds
         ac, af  = _cross_section_areas(
@@ -368,12 +406,9 @@ def compute_platform_earthwork(surface_id: ObjectId, alignment_id: ObjectId,
             platform.width, platform.side, road_half_width
         )
         if prev_ac is not None:
-            ds_step = stations[stations.index(st)] - stations[stations.index(st) - 1] if stations.index(st) > 0 else spacing
-            # Buscar ds real
-            idx = stations.index(st)
-            ds_step = stations[idx] - stations[idx - 1]
-            vol_cut  += (prev_ac + ac)  / 2.0 * ds_step
-            vol_fill += (prev_af + af) / 2.0 * ds_step
+            d_st        = stations[i] - stations[i - 1]
+            vol_cut    += (prev_ac + ac)  / 2.0 * d_st
+            vol_fill   += (prev_af + af) / 2.0 * d_st
         prev_ac, prev_af = ac, af
 
     platform.volume_cut  = vol_cut
@@ -382,95 +417,99 @@ def compute_platform_earthwork(surface_id: ObjectId, alignment_id: ObjectId,
     return vol_cut, vol_fill
 
 
-# ---------------------------------------------------------------------------
-# 5. COMPENSACIÓN DE MOVIMIENTO DE TIERRA (BISECCIÓN)
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 4. COMPENSACIÓN DE TIERRAS (BISECCIÓN)
+# ===========================================================================
 
-def find_optimal_elevation(surface_id: ObjectId, alignment_id: ObjectId,
-                            platform: Platform,
-                            road_half_width: float = 4.0,
-                            spacing: float = SECTION_SPACING) -> float:
+def find_optimal_elevation(surface_id, alignment_id, platform,
+                            road_half_width=ROAD_HALF_WIDTH_M,
+                            spacing=SECTION_SPACING_M,
+                            search_range=15.0):
     """
-    Encuentra la cota de inicio de la plataforma (en pk_start) que minimiza
-    el movimiento neto de tierras (corte - relleno ≈ 0).
+    Cota de inicio (pk_start) que equilibra corte y relleno.
 
-    Método de bisección:
-    - Se muestrea la cota del TN en pk_start para definir el rango [z_low, z_high]
-    - Se evalúa balance(z) = vol_cut(z) - vol_fill(z)
-    - Se busca la cota donde balance cambia de signo (corte→relleno)
+    search_range : rango de búsqueda ± alrededor de la cota TN central (m).
     """
-    # Cota TN en el punto central de la plataforma como referencia
-    cx, cy = _alignment_point_at_station(
+    cx, cy = _alignment_xy_at_station(
         alignment_id, (platform.pk_start + platform.pk_end) / 2.0
     )
-    z_ref = _get_surface_elev_at_xy(surface_id, cx, cy)
+    z_ref = _surface_elev_at_xy(surface_id, cx, cy)
     if z_ref is None:
-        raise ValueError(f"[{platform.name}] No se encontró cota TN en el centroide.")
+        raise ValueError(
+            "[%s] No se encontró cota TN en el centroide de la plataforma."
+            % platform.name
+        )
 
-    # Definir rango de búsqueda: ±15 m alrededor de la cota TN
-    z_low  = z_ref - 15.0
-    z_high = z_ref + 15.0
+    z_low  = z_ref - search_range
+    z_high = z_ref + search_range
 
     def balance(z):
         platform.elevation = z
         c, f = compute_platform_earthwork(
-            surface_id, alignment_id, platform, spacing, road_half_width
+            surface_id, alignment_id, platform, road_half_width, spacing
         )
-        return c - f   # >0 → mucho corte (bajar cota), <0 → mucho relleno (subir cota)
+        return c - f   # > 0 → mucho corte → bajar z
 
-    bal_low  = balance(z_low)
-    bal_high = balance(z_high)
+    b_low  = balance(z_low)
+    b_high = balance(z_high)
 
-    # Si no hay cruce de signo, retornar la opción de menor balance absoluto
-    if bal_low * bal_high > 0:
-        if abs(bal_low) < abs(bal_high):
+    # Sin cruce de signo: devolver el extremo de menor balance absoluto
+    if b_low * b_high > 0:
+        if abs(b_low) <= abs(b_high):
             platform.elevation = z_low
         else:
             platform.elevation = z_high
         platform.optimal_elevation = platform.elevation
         return platform.elevation
 
+    # Bisección
     for _ in range(BISECT_MAX_ITER):
         z_mid   = (z_low + z_high) / 2.0
-        bal_mid = balance(z_mid)
-
-        if abs(bal_mid) < BISECT_TOLERANCE * platform.length:
+        b_mid   = balance(z_mid)
+        if abs(b_mid) < BISECT_TOLERANCE * platform.length:
             break
-
-        if bal_low * bal_mid <= 0:
-            z_high   = z_mid
-            bal_high = bal_mid
+        if b_low * b_mid <= 0:
+            z_high = z_mid
+            b_high = b_mid
         else:
-            z_low    = z_mid
-            bal_low  = bal_mid
+            z_low  = z_mid
+            b_low  = b_mid
 
     platform.elevation         = (z_low + z_high) / 2.0
     platform.optimal_elevation = platform.elevation
     return platform.elevation
 
 
-def compensate_earthwork_all(surface_id: ObjectId, alignment_id: ObjectId,
-                              platforms: list[Platform],
-                              profile_id: ObjectId | None = None,
-                              kv: float = KV_DEFAULT,
-                              road_half_width: float = 4.0,
-                              spacing: float = SECTION_SPACING) -> list[dict]:
+# ===========================================================================
+# 5. COMPENSACIÓN DE TODAS LAS PLATAFORMAS
+# ===========================================================================
+
+def compensate_earthwork_all(surface_id, alignment_id, platforms,
+                              profile_id=None,
+                              kv=KV_DEFAULT,
+                              road_half_width=ROAD_HALF_WIDTH_M,
+                              spacing=SECTION_SPACING_M,
+                              search_range=15.0):
     """
     Para cada plataforma:
-      1. Obtiene pendientes de rasante en pk_start y pk_end.
-      2. Calcula longitudes de acuerdo vertical (KV = 800).
-      3. Encuentra la cota óptima de compensación de tierras.
-      4. Verifica factibilidad de acuerdos.
-      5. Calcula volúmenes finales.
+      1. Lee pendientes de rasante en pk_start y pk_end (si hay perfil).
+      2. Calcula longitudes de acuerdo KV.
+      3. Encuentra la cota óptima de compensación.
+      4. Calcula volúmenes finales.
 
-    Retorna lista de dicts con resultados por plataforma.
+    Todos los parámetros de diseño son explícitos — ninguno hardcodeado.
+
+    Retorna lista de dicts con resultados.
     """
     results = []
 
     for plt in platforms:
-        res = {'name': plt.name, 'ok': True, 'warnings': [], 'errors': []}
+        res = {
+            'name': plt.name, 'ok': True,
+            'warnings': [], 'errors': [],
+        }
 
-        # A) Pendientes de rasante (si se proporciona perfil)
+        # A) Pendientes de rasante
         if profile_id is not None:
             try:
                 plt.grade_entry_road = get_road_grade_at(
@@ -480,154 +519,115 @@ def compensate_earthwork_all(surface_id: ObjectId, alignment_id: ObjectId,
                     alignment_id, profile_id, plt.pk_end
                 )
             except Exception as ex:
-                res['errors'].append(f"Error leyendo rasante: {ex}")
+                res['errors'].append("Error leyendo rasante: %s" % ex)
                 res['ok'] = False
                 results.append(res)
                 continue
         else:
             res['warnings'].append(
-                "Sin perfil de rasante — usando pendientes 0% para acuerdos."
+                "Sin perfil de rasante — acuerdos calculados con pendiente 0%."
             )
 
-        # B) Longitudes de acuerdo KV = 800
+        # B) Longitudes de acuerdo KV
         feas = check_kv_feasibility(plt, kv)
-        res['L_entry']   = feas['L_entry']
-        res['L_exit']    = feas['L_exit']
-        res['warnings'] += feas['warnings']
+        res['L_entry']    = feas['L_entry']
+        res['L_exit']     = feas['L_exit']
+        res['warnings']  += feas['warnings']
 
-        # C) Cota óptima de compensación
+        # C) Cota óptima
         if plt.elevation is None:
             try:
                 find_optimal_elevation(
-                    surface_id, alignment_id, plt, road_half_width, spacing
+                    surface_id, alignment_id, plt,
+                    road_half_width, spacing, search_range
                 )
-                res['optimal_elevation'] = plt.optimal_elevation
             except Exception as ex:
-                res['errors'].append(f"Error en compensación: {ex}")
+                res['errors'].append("Error en compensación: %s" % ex)
                 res['ok'] = False
                 results.append(res)
                 continue
         else:
             compute_platform_earthwork(
-                surface_id, alignment_id, plt, spacing, road_half_width
+                surface_id, alignment_id, plt, road_half_width, spacing
             )
-            res['optimal_elevation'] = plt.elevation
 
-        # D) Resumen volumétrico
-        res['volume_cut']  = plt.volume_cut
-        res['volume_fill'] = plt.volume_fill
-        res['balance_m3']  = plt.balance
-
+        res['optimal_elevation'] = plt.active_elevation
+        res['volume_cut']        = plt.volume_cut
+        res['volume_fill']       = plt.volume_fill
+        res['balance_m3']        = plt.balance
         results.append(res)
 
     return results
 
 
-# ---------------------------------------------------------------------------
-# 6. MODIFICAR PERFIL DE RASANTE PARA INCLUIR PLATAFORMAS (PIPs)
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 6. MODIFICAR PERFIL DE RASANTE (PIPs)
+# ===========================================================================
 
-def add_platform_pips_to_profile(alignment_id: ObjectId, profile_id: ObjectId,
-                                   platforms: list[Platform],
-                                   kv: float = KV_DEFAULT) -> list[str]:
+def add_platform_pips_to_profile(alignment_id, profile_id, platforms,
+                                   kv=KV_DEFAULT):
     """
-    Inserta los Puntos de Intersección de Perfil (PIPs) necesarios para
-    los acuerdos verticales de cada plataforma.
+    Inserta PIPs con curvas verticales en el perfil de rasante para los
+    acuerdos de entrada y salida de cada plataforma.
 
-    Geometría del perfil en zona de plataforma:
-    ─────────────────────────────────────────────────────────────
-    ... i_road ... PIP_A ... [acuerdo L_en] ... pk_start ... plataforma ...
-                                                pk_end  ... [acuerdo L_ex] ... PIP_B ... i_road ...
-    ─────────────────────────────────────────────────────────────
-    PIP_A : estación = pk_start,  cota = elev_plataforma_pk_start
-            kv_length = L_entry
-    PIP_B : estación = pk_end,    cota = elev_plataforma_pk_end
-            kv_length = L_exit
-
-    NOTA: Civil 3D requiere que los PIPs se inserten en orden de estación.
-    Si ya existen PIPs cercanos (±L/2) se ajustan en lugar de duplicar.
+    Los PIPs se agregan siempre en orden de estación creciente.
     """
-    doc = Application.DocumentManager.MdiActiveDocument
-    db  = doc.Database
+    doc  = Application.DocumentManager.MdiActiveDocument
+    db   = doc.Database
     logs = []
 
     with doc.LockDocument():
         with db.TransactionManager.StartTransaction() as tr:
-            prof = tr.GetObject(profile_id, OpenMode.ForWrite)
-            ali  = tr.GetObject(alignment_id, OpenMode.ForRead)
-
-            pvics: ProfilePVICollection = prof.PVIs
+            prof  = tr.GetObject(profile_id, OpenMode.ForWrite)
+            pvics = prof.PVIs
 
             for plt in platforms:
                 elev_start = plt.active_elevation
                 if elev_start is None:
-                    logs.append(f"[{plt.name}] SKIP — sin cota calculada")
+                    logs.append("[%s] SKIP PIPs — sin cota calculada" % plt.name)
                     continue
+                elev_end = (elev_start
+                            + (plt.slope_pct / 100.0) * plt.length)
 
-                # Cota al final de la plataforma (con pendiente longitudinal)
-                elev_end = elev_start + (plt.slope_pct / 100.0) * plt.length
-
-                # PIP entrada: en pk_start con acuerdo L_entry
-                try:
-                    pvi_a = pvics.AddPVI(plt.pk_start, elev_start)
-                    pvi_a.CurveLength = plt.L_entry
-                    logs.append(
-                        f"[{plt.name}] PIP entrada: PK={plt.pk_start:.2f} "
-                        f"Z={elev_start:.3f} L_cv={plt.L_entry:.1f}m"
-                    )
-                except Exception as ex:
-                    logs.append(f"[{plt.name}] ERROR PIP entrada: {ex}")
-
-                # PIP salida: en pk_end con acuerdo L_exit
-                try:
-                    pvi_b = pvics.AddPVI(plt.pk_end, elev_end)
-                    pvi_b.CurveLength = plt.L_exit
-                    logs.append(
-                        f"[{plt.name}] PIP salida:  PK={plt.pk_end:.2f} "
-                        f"Z={elev_end:.3f} L_cv={plt.L_exit:.1f}m"
-                    )
-                except Exception as ex:
-                    logs.append(f"[{plt.name}] ERROR PIP salida: {ex}")
-
+                for label, station, elev, L_cv in (
+                    ("entrada", plt.pk_start, elev_start, plt.L_entry),
+                    ("salida",  plt.pk_end,   elev_end,   plt.L_exit),
+                ):
+                    try:
+                        pvi = pvics.AddPVI(station, elev)
+                        pvi.CurveLength = L_cv
+                        logs.append(
+                            "[%s] PIP %s: PK=%.2f Z=%.3f L_cv=%.1fm"
+                            % (plt.name, label, station, elev, L_cv)
+                        )
+                    except Exception as ex:
+                        logs.append(
+                            "[%s] ERROR PIP %s: %s" % (plt.name, label, ex)
+                        )
             tr.Commit()
 
     return logs
 
 
-# ---------------------------------------------------------------------------
-# 7. CREAR REGIÓN DE CORREDOR PARA CADA PLATAFORMA
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 7. REGIONES DEL CORREDOR
+# ===========================================================================
 
-def add_platform_regions_to_corridor(corridor_id: ObjectId,
-                                      alignment_id: ObjectId,
-                                      platform_assembly_name: str,
-                                      platforms: list[Platform]) -> list[str]:
+def add_platform_regions_to_corridor(corridor_id, alignment_id,
+                                      platform_assembly_name, platforms):
     """
     Agrega una región del corredor por cada plataforma usando el assembly
-    de plataforma especificado.  Las regiones de corredor definen qué
-    assembly (sección transversal) se aplica en qué rango de estaciones.
-
-    El assembly de plataforma debe existir en el dibujo con el nombre dado.
-    Recomendado: assembly con calzada extendida (carril + berma + talud plataforma).
+    especificado.  El assembly debe existir en el dibujo — se busca por
+    nombre (insensible a mayúsculas).
     """
-    doc = Application.DocumentManager.MdiActiveDocument
-    db  = doc.Database
-    cdoc = CivilApplication.ActiveDocument
+    doc  = Application.DocumentManager.MdiActiveDocument
+    db   = doc.Database
     logs = []
 
-    # Buscar assembly de plataforma
-    plt_asm_id = None
-    for asm_id in cdoc.GetAssemblyIds():
-        with db.TransactionManager.StartTransaction() as tr:
-            asm = tr.GetObject(asm_id, OpenMode.ForRead)
-            if asm.Name.upper() == platform_assembly_name.upper():
-                plt_asm_id = asm_id
-                tr.Commit()
-                break
-            tr.Commit()
-
-    if plt_asm_id is None:
-        return [f"ERROR: Assembly '{platform_assembly_name}' no encontrado."]
+    try:
+        plt_asm_id = resolve_assembly_id(platform_assembly_name)
+    except ValueError as ex:
+        return ["ERROR: %s" % ex]
 
     with doc.LockDocument():
         with db.TransactionManager.StartTransaction() as tr:
@@ -635,19 +635,20 @@ def add_platform_regions_to_corridor(corridor_id: ObjectId,
             baseline = corridor.Baselines[0]
 
             for plt in platforms:
+                pk_reg_start = plt.pk_start - plt.L_entry / 2.0
+                pk_reg_end   = plt.pk_end   + plt.L_exit  / 2.0
                 try:
-                    region = baseline.BaselineRegions.Add(
-                        plt.pk_start - plt.L_entry / 2.0,  # inicio con acuerdo
-                        plt.pk_end   + plt.L_exit  / 2.0,  # fin con acuerdo
-                        plt_asm_id
+                    baseline.BaselineRegions.Add(
+                        pk_reg_start, pk_reg_end, plt_asm_id
                     )
                     logs.append(
-                        f"[{plt.name}] Región corredor: "
-                        f"PK={plt.pk_start - plt.L_entry/2:.1f}–"
-                        f"{plt.pk_end + plt.L_exit/2:.1f}"
+                        "[%s] Región corredor: PK=%.1f–%.1f"
+                        % (plt.name, pk_reg_start, pk_reg_end)
                     )
                 except Exception as ex:
-                    logs.append(f"[{plt.name}] ERROR región corredor: {ex}")
+                    logs.append(
+                        "[%s] ERROR región corredor: %s" % (plt.name, ex)
+                    )
 
             corridor.Rebuild()
             tr.Commit()
@@ -655,23 +656,24 @@ def add_platform_regions_to_corridor(corridor_id: ObjectId,
     return logs
 
 
-# ---------------------------------------------------------------------------
-# 8. CREAR FEATURE LINES DE BORDES DE PLATAFORMA
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 8. FEATURE LINES DE BORDE DE PLATAFORMA
+# ===========================================================================
 
-def create_platform_feature_lines(alignment_id: ObjectId,
-                                   platforms: list[Platform],
-                                   layer_name: str = "C-ROAD-PLATFORM",
-                                   spacing: float = 5.0) -> list[str]:
+def create_platform_feature_lines(alignment_id, platforms,
+                                   layer_name=LAYER_PLATFORM_FL,
+                                   cross_slope_pct=CROSS_SLOPE_PCT,
+                                   road_half_width=ROAD_HALF_WIDTH_M,
+                                   spacing=SECTION_SPACING_M):
     """
-    Crea Feature Lines en Civil 3D para los bordes de la plataforma
-    (borde exterior derecho/izquierdo).  Estas feature lines sirven como
-    líneas de ruptura para la superficie de explanada y como límite del
-    grading.
+    Feature Lines en los bordes exteriores de cada plataforma.
+    Cota = Z_long (pendiente longitudinal) - Z_transv (bombeo de plataforma).
 
-    La cota de cada punto se calcula con:
-      Z = elev_start + slope_pct/100 * (station - pk_start)
-    más el desnivel transversal por el bombeo de la plataforma.
+    Parámetros configurables:
+      layer_name       : capa destino (creada si no existe)
+      cross_slope_pct  : bombeo transversal de la plataforma (%)
+      road_half_width  : semi-ancho de calzada (m)
+      spacing          : espaciado entre puntos de la feature line (m)
     """
     doc  = Application.DocumentManager.MdiActiveDocument
     db   = doc.Database
@@ -682,66 +684,63 @@ def create_platform_feature_lines(alignment_id: ObjectId,
         with db.TransactionManager.StartTransaction() as tr:
             bt  = tr.GetObject(db.BlockTableId, OpenMode.ForRead)
             btr = tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite)
-
-            # Asegurar que la capa exista
             _ensure_layer(db, tr, layer_name)
+
+            ali = tr.GetObject(alignment_id, OpenMode.ForRead)
 
             for plt in platforms:
                 elev_start = plt.active_elevation
                 if elev_start is None:
-                    logs.append(f"[{plt.name}] SKIP feature lines — sin cota")
+                    logs.append("[%s] SKIP feature lines — sin cota" % plt.name)
                     continue
 
-                sides_offsets = []
+                sides = []
                 if plt.side in ('right', 'both'):
-                    sides_offsets.append(('R', +plt.width))
+                    sides.append(('R', +plt.width))
                 if plt.side in ('left', 'both'):
-                    sides_offsets.append(('L', -plt.width))
+                    sides.append(('L', -plt.width))
 
-                ali = tr.GetObject(alignment_id, OpenMode.ForRead)
+                n_pts = max(2, int(math.ceil(plt.length / spacing)) + 1)
+                stations = [
+                    plt.pk_start + plt.length * i / (n_pts - 1)
+                    for i in range(n_pts)
+                ]
 
-                for side_tag, offset in sides_offsets:
-                    pts3d = []
-                    st = plt.pk_start
-                    while st <= plt.pk_end + 1e-6:
-                        st_clamped = min(st, plt.pk_end)
-                        ds = st_clamped - plt.pk_start
-                        # Cota longitudinal
-                        z_long = elev_start + (plt.slope_pct / 100.0) * ds
-                        # Desnivel transversal por bombeo (cae hacia afuera del camino)
-                        z_cross = z_long - (CROSS_SLOPE_PLT / 100.0) * plt.width
+                for side_tag, sign in sides:
+                    offset = sign * (road_half_width + plt.width) if sign > 0 else sign * (road_half_width + plt.width)
+                    # offset al borde exterior de la plataforma
+                    offset = (road_half_width + plt.width) * (1 if sign > 0 else -1)
+                    pts3d  = []
 
-                        # Coordenadas XY en el offset
-                        edge_pt  = Point3d(0, 0, 0)
-                        edge_dir = Vector3d(0, 0, 0)
-                        ali.PointLocation(st_clamped, offset, edge_pt, edge_dir)
+                    for st in stations:
+                        ds      = st - plt.pk_start
+                        z_long  = elev_start + (plt.slope_pct / 100.0) * ds
+                        z_trans = z_long - (cross_slope_pct / 100.0) * plt.width
+                        pt  = Point3d(0, 0, 0)
+                        dir = Vector3d(0, 0, 0)
+                        ali.PointLocation(st, offset, pt, dir)
+                        pts3d.append(Point3d(pt.X, pt.Y, z_trans))
 
-                        pts3d.append(Point3d(edge_pt.X, edge_pt.Y, z_cross))
-                        st += spacing
-
-                    # Crear Feature Line con los puntos
                     if len(pts3d) >= 2:
                         try:
                             fl_id = FeatureLine.Create(
-                                cdoc,
-                                ObjectId.Null,  # sin sitio
-                                f"FL-{plt.name}-{side_tag}"
+                                cdoc, ObjectId.Null,
+                                "FL-%s-%s" % (plt.name, side_tag)
                             )
                             fl = tr.GetObject(fl_id, OpenMode.ForWrite)
                             fl.Layer = layer_name
-
                             for pt in pts3d:
                                 fl.InsertPI(pt)
-
                             btr.AppendEntity(fl)
                             tr.AddNewlyCreatedDBObject(fl, True)
                             logs.append(
-                                f"[{plt.name}-{side_tag}] FeatureLine creada "
-                                f"({len(pts3d)} puntos)"
+                                "[%s-%s] FeatureLine creada (%d pts)"
+                                % (plt.name, side_tag, len(pts3d))
                             )
                         except Exception as ex:
                             logs.append(
-                                f"[{plt.name}-{side_tag}] ERROR feature line: {ex}"
+                                "[%s-%s] ERROR feature line: %s"
+                                % (plt.name, side_tag, ex)
                             )
 
             tr.Commit()
@@ -749,33 +748,25 @@ def create_platform_feature_lines(alignment_id: ObjectId,
     return logs
 
 
-def _ensure_layer(db, tr, layer_name: str):
-    """Crea la capa si no existe."""
-    from Autodesk.AutoCAD.DatabaseServices import LayerTable, LayerTableRecord
-    lt = tr.GetObject(db.LayerTableId, OpenMode.ForRead)
-    if not lt.Has(layer_name):
-        lt.UpgradeOpen()
-        ltr = LayerTableRecord()
-        ltr.Name = layer_name
-        lt.Add(ltr)
-        tr.AddNewlyCreatedDBObject(ltr, True)
+# ===========================================================================
+# 9. SUPERFICIE TIN DE PLATAFORMA
+# ===========================================================================
 
-
-# ---------------------------------------------------------------------------
-# 9. CREAR SUPERFICIE TIN DE PLATAFORMA (GRADING)
-# ---------------------------------------------------------------------------
-
-def create_platform_tin_surface(alignment_id: ObjectId,
-                                  platforms: list[Platform],
-                                  surface_name_prefix: str = "PLT",
-                                  road_half_width: float = 4.0,
-                                  spacing: float = 5.0) -> list[str]:
+def create_platform_tin_surface(alignment_id, platforms,
+                                  surface_name_prefix="PLT",
+                                  road_half_width=ROAD_HALF_WIDTH_M,
+                                  cross_slope_pct=CROSS_SLOPE_PCT,
+                                  spacing=SECTION_SPACING_M,
+                                  n_lateral=6):
     """
-    Crea una superficie TIN por cada plataforma definiendo una malla de
-    puntos que representa la explanada terminada.
+    Superficie TIN de la explanada terminada para cada plataforma.
 
-    La malla cubre desde el borde de la calzada (road_half_width) hasta
-    el borde exterior de la plataforma, con cota decreciente por bombeo.
+    Parámetros configurables:
+      surface_name_prefix : prefijo para el nombre de la superficie
+      road_half_width     : semi-ancho de calzada (m)
+      cross_slope_pct     : bombeo transversal (%)
+      spacing             : espaciado longitudinal de la malla (m)
+      n_lateral           : divisiones transversales de la malla
     """
     doc  = Application.DocumentManager.MdiActiveDocument
     db   = doc.Database
@@ -785,14 +776,14 @@ def create_platform_tin_surface(alignment_id: ObjectId,
     for plt in platforms:
         elev_start = plt.active_elevation
         if elev_start is None:
-            logs.append(f"[{plt.name}] SKIP superficie — sin cota")
+            logs.append("[%s] SKIP TIN — sin cota" % plt.name)
             continue
 
-        surf_name = f"{surface_name_prefix}-{plt.name}"
+        surf_name = "%s-%s" % (surface_name_prefix, plt.name)
         try:
             surf_id = TinSurface.Create(cdoc, surf_name)
         except Exception as ex:
-            logs.append(f"[{plt.name}] ERROR crear TIN: {ex}")
+            logs.append("[%s] ERROR crear TIN '%s': %s" % (plt.name, surf_name, ex))
             continue
 
         with doc.LockDocument():
@@ -800,28 +791,24 @@ def create_platform_tin_surface(alignment_id: ObjectId,
                 surf = tr.GetObject(surf_id, OpenMode.ForWrite)
                 ali  = tr.GetObject(alignment_id, OpenMode.ForRead)
 
-                n_lateral  = 6   # puntos en dirección transversal
-                n_stations = max(4, int(plt.length / spacing) + 1)
+                n_stations = max(4, int(math.ceil(plt.length / spacing)) + 1)
 
-                offsets_def = []
+                offsets = []
                 if plt.side in ('right', 'both'):
                     for k in range(n_lateral + 1):
-                        offsets_def.append(
-                            road_half_width + plt.width * k / n_lateral
-                        )
+                        offsets.append(road_half_width + plt.width * k / n_lateral)
                 if plt.side in ('left', 'both'):
                     for k in range(n_lateral + 1):
-                        offsets_def.append(
-                            -(road_half_width + plt.width * k / n_lateral)
-                        )
+                        offsets.append(-(road_half_width + plt.width * k / n_lateral))
 
                 for i in range(n_stations):
-                    st = plt.pk_start + (plt.pk_end - plt.pk_start) * i / (n_stations - 1)
-                    ds = st - plt.pk_start
+                    st     = plt.pk_start + plt.length * i / (n_stations - 1)
+                    ds     = st - plt.pk_start
                     z_long = elev_start + (plt.slope_pct / 100.0) * ds
 
-                    for off in offsets_def:
-                        z_cross = z_long - (CROSS_SLOPE_PLT / 100.0) * abs(off - road_half_width)
+                    for off in offsets:
+                        dist_from_edge = abs(abs(off) - road_half_width)
+                        z_cross = z_long - (cross_slope_pct / 100.0) * dist_from_edge
                         pt  = Point3d(0, 0, 0)
                         dir = Vector3d(0, 0, 0)
                         ali.PointLocation(st, off, pt, dir)
@@ -833,89 +820,88 @@ def create_platform_tin_surface(alignment_id: ObjectId,
                 surf.Rebuild()
                 tr.Commit()
 
-        logs.append(f"[{plt.name}] Superficie TIN '{surf_name}' creada.")
+        logs.append("[%s] TIN '%s' creado." % (plt.name, surf_name))
 
     return logs
 
 
-# ---------------------------------------------------------------------------
-# 10. FUNCIÓN PRINCIPAL DE INTEGRACIÓN
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 10. FUNCIÓN MAESTRA DE INTEGRACIÓN
+# ===========================================================================
 
-def integrate_platforms(alignment_id: ObjectId,
-                         profile_id: ObjectId,
-                         corridor_id: ObjectId,
-                         surface_id: ObjectId,
-                         platforms: list[Platform],
-                         platform_assembly_name: str = "plataforma",
-                         kv: float = KV_DEFAULT,
-                         road_half_width: float = 4.0,
-                         section_spacing: float = SECTION_SPACING) -> dict:
+def integrate_platforms(alignment_id, profile_id, corridor_id, surface_id,
+                         platforms,
+                         platform_assembly_name="plataforma",
+                         kv=KV_DEFAULT,
+                         road_half_width=ROAD_HALF_WIDTH_M,
+                         cross_slope_pct=CROSS_SLOPE_PCT,
+                         section_spacing=SECTION_SPACING_M,
+                         platform_layer=LAYER_PLATFORM_FL,
+                         surface_prefix="PLT",
+                         search_range=15.0):
     """
-    Orquesta el flujo completo de integración de plataformas:
+    Orquesta el flujo completo. Todos los parámetros son explícitos para
+    que la función sea portátil a cualquier proyecto de Civil 3D.
 
-    1. Compensación de tierras (cota óptima por bisección).
-    2. Cálculo de acuerdos verticales KV = 800.
-    3. Inserción de PIPs en el perfil de rasante.
-    4. Creación de regiones en el corredor.
-    5. Creación de feature lines de borde de plataforma.
-    6. Creación de superficie TIN de plataforma.
+    Pasos:
+      1. Compensación de tierras (bisección → cota óptima)
+      2. Acuerdos verticales KV
+      3. PIPs en perfil de rasante
+      4. Regiones de corredor con assembly de plataforma
+      5. Feature lines de borde de explanada
+      6. Superficie TIN de plataforma
 
-    Retorna dict con logs y resumen volumétrico de cada plataforma.
+    Retorna dict {'logs': [...], 'summary': [...]}
     """
-    all_logs   = []
-    summary    = []
+    logs    = []
+    summary = []
 
-    # --- PASO 1 & 2: Compensación y acuerdos ---
-    comp_results = compensate_earthwork_all(
+    # Pasos 1-2
+    comp = compensate_earthwork_all(
         surface_id, alignment_id, platforms,
         profile_id=profile_id,
         kv=kv,
         road_half_width=road_half_width,
         spacing=section_spacing,
+        search_range=search_range,
     )
-    for res in comp_results:
-        all_logs.append(
-            f"[{res['name']}] Cota óptima={res.get('optimal_elevation', '?'):.3f} m  "
-            f"Corte={res.get('volume_cut', 0):.1f} m³  "
-            f"Relleno={res.get('volume_fill', 0):.1f} m³  "
-            f"Balance={res.get('balance_m3', 0):.1f} m³  "
-            f"L_entrada={res.get('L_entry', 0):.1f} m  "
-            f"L_salida={res.get('L_exit', 0):.1f} m"
+    for r in comp:
+        logs.append(
+            "[%(name)s] Z=%(optimal_elevation).3f m  "
+            "Corte=%(volume_cut).1f m³  Relleno=%(volume_fill).1f m³  "
+            "Balance=%(balance_m3)+.1f m³  "
+            "L_ent=%(L_entry).1f m  L_sal=%(L_exit).1f m" % r
         )
-        all_logs += res.get('warnings', [])
-        all_logs += res.get('errors',   [])
-        summary.append(res)
+        logs += r.get('warnings', [])
+        logs += r.get('errors',   [])
+        summary.append(r)
 
-    # Filtrar plataformas válidas para los siguientes pasos
-    valid_platforms = [
-        p for p, r in zip(platforms, comp_results)
-        if r['ok'] and p.active_elevation is not None
-    ]
+    valid = [p for p, r in zip(platforms, comp) if r['ok']]
 
-    # --- PASO 3: Modificar rasante con PIPs ---
-    pip_logs = add_platform_pips_to_profile(
-        alignment_id, profile_id, valid_platforms, kv
+    # Paso 3
+    logs += add_platform_pips_to_profile(alignment_id, profile_id, valid, kv)
+
+    # Paso 4
+    logs += add_platform_regions_to_corridor(
+        corridor_id, alignment_id, platform_assembly_name, valid
     )
-    all_logs += pip_logs
 
-    # --- PASO 4: Regiones de corredor ---
-    cor_logs = add_platform_regions_to_corridor(
-        corridor_id, alignment_id, platform_assembly_name, valid_platforms
+    # Paso 5
+    logs += create_platform_feature_lines(
+        alignment_id, valid,
+        layer_name=platform_layer,
+        cross_slope_pct=cross_slope_pct,
+        road_half_width=road_half_width,
+        spacing=section_spacing,
     )
-    all_logs += cor_logs
 
-    # --- PASO 5: Feature Lines ---
-    fl_logs = create_platform_feature_lines(
-        alignment_id, valid_platforms, spacing=section_spacing
+    # Paso 6
+    logs += create_platform_tin_surface(
+        alignment_id, valid,
+        surface_name_prefix=surface_prefix,
+        road_half_width=road_half_width,
+        cross_slope_pct=cross_slope_pct,
+        spacing=section_spacing,
     )
-    all_logs += fl_logs
 
-    # --- PASO 6: Superficie TIN ---
-    tin_logs = create_platform_tin_surface(
-        alignment_id, valid_platforms,
-        road_half_width=road_half_width, spacing=section_spacing
-    )
-    all_logs += tin_logs
-
-    return {'logs': all_logs, 'summary': summary}
+    return {'logs': logs, 'summary': summary}

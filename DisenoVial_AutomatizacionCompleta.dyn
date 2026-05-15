@@ -413,29 +413,44 @@
       "Id": "6f056a83-0fdd-4ddb-8fcc-4a4acff7d233",
       "Inputs": [
         {
-          "Id": "cdc714e3-d5df-4b6d-b71e-c581fd1ac92a",
+          "Id": "fccff4bc-34cc-4ed3-a9dd-0ad19ebfc7b4",
           "Name": "IN[0]",
-          "Description": "corridor_ids"
-        },
-        {
-          "Id": "cb974134-9ddb-4e93-a6ca-7fd406fe93b0",
-          "Name": "IN[1]",
           "Description": "alignment_ids"
         },
         {
-          "Id": "564836bd-4f63-4282-8c7a-c18d2a0328d0",
-          "Name": "IN[2]",
+          "Id": "a97bdd23-287b-4609-ae11-b77139797e67",
+          "Name": "IN[1]",
           "Description": "profile_name"
         },
         {
-          "Id": "ef69fb40-7ca0-4dbd-afba-5bab46e8f010",
-          "Name": "IN[3]",
+          "Id": "77926d60-04ea-49ca-a3f9-f549ca118f92",
+          "Name": "IN[2]",
           "Description": "surface_name"
         },
         {
-          "Id": "78f8ac51-747e-4429-896c-883a4a609ec5",
-          "Name": "IN[4]",
+          "Id": "4b14a92f-b0e2-4ce2-89de-50d9759b5973",
+          "Name": "IN[3]",
           "Description": "platforms_json"
+        },
+        {
+          "Id": "267d0389-9a66-440f-9b0f-9af89ea8269f",
+          "Name": "IN[4]",
+          "Description": "kv (def 800)"
+        },
+        {
+          "Id": "39e280d0-3fd4-4458-a8ea-cabae95e68f4",
+          "Name": "IN[5]",
+          "Description": "road_half_width (m)"
+        },
+        {
+          "Id": "f0b21d16-ac9c-4507-b48c-2337f34bf31c",
+          "Name": "IN[6]",
+          "Description": "cross_slope_pct (%)"
+        },
+        {
+          "Id": "cd9f114b-9327-46f6-92a0-c8716c40de2a",
+          "Name": "IN[7]",
+          "Description": "section_spacing (m)"
         }
       ],
       "Outputs": [
@@ -448,7 +463,7 @@
       "Replication": "Disabled",
       "Description": "Compensación de tierras + acuerdos KV=800",
       "Name": "PASO 6: Compensar Tierras KV=800",
-      "Code": "# PASO 6: Compensar movimiento de tierra y calcular acuerdos KV=800\n# IN[0] = corridor_id  (lista de corridor_ids del PASO 4)\n# IN[1] = alignment_id (lista de alignment_ids del PASO 1)\n# IN[2] = perfil TN name (str)\n# IN[3] = nombre superficie TN (str)\n# IN[4] = JSON de plataformas (str)\n# OUT   = [platforms_list, logs]\n\nimport clr, sys, json, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import OpenMode\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\n\n# Importar módulo platforms.py (debe estar en el mismo directorio que el .dyn)\n_dyn_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else r'C:\\Civil3D'\nif _dyn_dir not in sys.path:\n    sys.path.insert(0, _dyn_dir)\n\ntry:\n    import platforms as plt_mod\n    from platforms import Platform, compensate_earthwork_all, KV_DEFAULT\nexcept ImportError as ie:\n    OUT = [[], [f\"ERROR importando platforms.py: {ie}. Copiar platforms.py junto al .dyn\"]]\n    raise SystemExit(0)\n\nlogs = []\n\ncorridor_ids  = IN[0] if isinstance(IN[0], list) else [IN[0]]\nalignment_ids = IN[1] if isinstance(IN[1], list) else [IN[1]]\nprofile_name  = str(IN[2])\nsurface_name  = str(IN[3])\nplatform_json = str(IN[4])\n\ndoc   = Application.DocumentManager.MdiActiveDocument\ndb    = doc.Database\ncdoc  = CivilApplication.ActiveDocument\n\n# Resolver surface_id\nsurface_id = None\nfor sid in cdoc.GetSurfaceIds():\n    with db.TransactionManager.StartTransaction() as tr:\n        s = tr.GetObject(sid, OpenMode.ForRead)\n        if s.Name.upper() == surface_name.upper():\n            surface_id = sid\n            tr.Commit()\n            break\n        tr.Commit()\nif surface_id is None:\n    OUT = [[], [f\"ERROR: Superficie '{surface_name}' no encontrada\"]]\n    raise SystemExit(0)\n\n# Parsear plataformas desde JSON\ntry:\n    plt_defs = json.loads(platform_json)\nexcept Exception as ex:\n    OUT = [[], [f\"ERROR JSON plataformas: {ex}\"]]\n    raise SystemExit(0)\n\nplatforms = []\nfor d in plt_defs:\n    try:\n        p = Platform(\n            name      = d['name'],\n            pk_start  = float(d['pk_start']),\n            pk_end    = float(d['pk_end']),\n            width     = float(d['width']),\n            side      = d.get('side', 'right'),\n            slope_pct = float(d.get('slope_pct', 2.0)),\n            elevation = d.get('elevation', None),\n        )\n        platforms.append(p)\n        logs.append(f\"Plataforma definida: {p}\")\n    except Exception as ex:\n        logs.append(f\"ERROR definiendo plataforma {d.get('name','?')}: {ex}\")\n\nif not platforms:\n    OUT = [[], logs + [\"ERROR: Sin plataformas válidas\"]]\n    raise SystemExit(0)\n\n# Compensar tierras en el primer alineamiento (o todos si hay múltiples)\nall_results = []\nfor ali_id in alignment_ids:\n    # Buscar profile_id en el alineamiento\n    profile_id = None\n    with db.TransactionManager.StartTransaction() as tr:\n        ali = tr.GetObject(ali_id, OpenMode.ForRead)\n        for pid in ali.GetProfileIds():\n            prof = tr.GetObject(pid, OpenMode.ForRead)\n            if prof.Name.upper() == profile_name.upper():\n                profile_id = pid\n                tr.Commit()\n                break\n        else:\n            tr.Commit()\n\n    if profile_id is None:\n        logs.append(f\"AVISO: Rasante '{profile_name}' no encontrada en alineamiento — usando sin perfil\")\n\n    results = compensate_earthwork_all(\n        surface_id, ali_id, platforms,\n        profile_id=profile_id,\n        kv=KV_DEFAULT,\n        road_half_width=4.0,\n        spacing=5.0,\n    )\n    all_results += results\n    for r in results:\n        logs.append(\n            f\"[{r['name']}] Cota={r.get('optimal_elevation','-'):.3f}m  \"\n            f\"Corte={r.get('volume_cut',0):.0f}m³  \"\n            f\"Relleno={r.get('volume_fill',0):.0f}m³  \"\n            f\"Balance={r.get('balance_m3',0):+.0f}m³  \"\n            f\"L_ent={r.get('L_entry',0):.1f}m  L_sal={r.get('L_exit',0):.1f}m\"\n        )\n        if r.get('warnings'):\n            logs += [f\"  AVISO: {w}\" for w in r['warnings']]\n        if r.get('errors'):\n            logs += [f\"  ERROR: {e}\" for e in r['errors']]\n\nOUT = [platforms, logs]\n"
+      "Code": "# PASO 6: Compensar movimiento de tierra + acuerdos KV\n# IN[0] alignment_ids   IN[1] profile_name   IN[2] surface_name\n# IN[3] platforms_json  IN[4] kv             IN[5] road_half_width\n# IN[6] cross_slope_pct IN[7] section_spacing\n# OUT = [platforms_list, logs]\nimport clr, sys, json, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import OpenMode\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path:\n        sys.path.insert(0, _p)\n\ntry:\n    from platforms import (Platform, compensate_earthwork_all,\n                           resolve_surface_id, resolve_profile_id,\n                           list_profile_names, KV_DEFAULT)\nexcept ImportError as ie:\n    OUT = [[], [\"ERROR importando platforms.py: %s\" % ie,\n                \"Asegurar que platforms.py este en la misma carpeta que el .dyn\"]]\n    raise SystemExit(0)\n\nlogs = []\nalignment_ids  = IN[0] if isinstance(IN[0], list) else [IN[0]]\nprofile_name   = str(IN[1]).strip()\nsurface_name   = str(IN[2]).strip()\nplatform_json  = str(IN[3]).strip()\nkv             = float(IN[4]) if IN[4] is not None else KV_DEFAULT\nroad_hw        = float(IN[5]) if IN[5] is not None else 4.0\ncross_sl       = float(IN[6]) if IN[6] is not None else 2.5\nspacing        = float(IN[7]) if IN[7] is not None else 5.0\n\n# Resolver superficie\ntry:\n    surface_id = resolve_surface_id(surface_name)\n    logs.append(\"Superficie TN '%s' encontrada.\" % surface_name)\nexcept ValueError as ex:\n    OUT = [[], [str(ex)]]\n    raise SystemExit(0)\n\n# Parsear plataformas\ntry:\n    defs = json.loads(platform_json)\nexcept Exception as ex:\n    OUT = [[], [\"ERROR JSON plataformas: %s\" % ex]]\n    raise SystemExit(0)\n\nplatforms = []\nfor item in defs:\n    try:\n        p = Platform(\n            name      = item['name'],\n            pk_start  = float(item['pk_start']),\n            pk_end    = float(item['pk_end']),\n            width     = float(item['width']),\n            side      = item.get('side', 'right'),\n            slope_pct = float(item.get('slope_pct', 2.0)),\n            elevation = item.get('elevation', None),\n        )\n        platforms.append(p)\n        logs.append(\"OK: %s\" % p)\n    except Exception as ex:\n        logs.append(\"ERROR plataforma '%s': %s\" % (item.get('name','?'), ex))\n\nif not platforms:\n    OUT = [[], logs + [\"ERROR: Sin plataformas validas definidas.\"]]\n    raise SystemExit(0)\n\n# Compensar por cada alineamiento\ndb   = Application.DocumentManager.MdiActiveDocument.Database\nfor ali_id in alignment_ids:\n    profile_id = resolve_profile_id(ali_id, profile_name)\n    if profile_id is None:\n        avail = list_profile_names(ali_id)\n        logs.append(\"AVISO: rasante '%s' no encontrada. Disponibles: %s\" % (profile_name, avail))\n\n    results = compensate_earthwork_all(\n        surface_id, ali_id, platforms,\n        profile_id=profile_id,\n        kv=kv,\n        road_half_width=road_hw,\n        spacing=spacing,\n        search_range=15.0,\n    )\n    for r in results:\n        logs.append(\n            \"[%(name)s] Z=%(optimal_elevation).3f m  \"\n            \"Corte=%(volume_cut).1f m3  Relleno=%(volume_fill).1f m3  \"\n            \"Balance=%(balance_m3)+.1f m3  \"\n            \"L_ent=%(L_entry).1f m  L_sal=%(L_exit).1f m\" % r\n        )\n        for w in r.get('warnings',[]): logs.append(\"  AVISO: \" + w)\n        for e in r.get('errors',  []): logs.append(\"  ERROR: \" + e)\n\nOUT = [platforms, logs]\n"
     },
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
@@ -458,29 +473,59 @@
       "Id": "dd65cf68-127f-4a38-9673-2b2166cd7459",
       "Inputs": [
         {
-          "Id": "caeb3b0c-93f9-45e4-908b-bc3b999a9a31",
+          "Id": "bb51b954-1d7b-44c4-9ed2-29c23eab6eef",
           "Name": "IN[0]",
           "Description": "platforms"
         },
         {
-          "Id": "c365fcdf-35fc-4ec8-84bf-3aba8df4e3b6",
+          "Id": "723ea4e8-1835-484b-b9a4-1964442e50c2",
           "Name": "IN[1]",
           "Description": "corridor_ids"
         },
         {
-          "Id": "2dd5187b-f2c8-4263-8603-2e116bb8ed85",
+          "Id": "5b465d1c-aafa-48f6-b566-53dfae603e83",
           "Name": "IN[2]",
           "Description": "alignment_ids"
         },
         {
-          "Id": "744db898-f508-4811-a9ec-c19d9cb5fa53",
+          "Id": "7c237a6d-f62d-43ad-8d04-29ebf5622303",
           "Name": "IN[3]",
           "Description": "profile_name"
         },
         {
-          "Id": "9c9612ff-fb3f-4136-9d77-313d845ca001",
+          "Id": "b18d1295-8a43-4828-bfb5-5689cfe109ad",
           "Name": "IN[4]",
-          "Description": "assembly_plataforma"
+          "Description": "asm_plataforma"
+        },
+        {
+          "Id": "16d711b4-bc84-4d9f-80af-e122b162e99f",
+          "Name": "IN[5]",
+          "Description": "kv"
+        },
+        {
+          "Id": "89f8b840-08c1-462a-99eb-2a5a168e4953",
+          "Name": "IN[6]",
+          "Description": "road_half_width (m)"
+        },
+        {
+          "Id": "803f4725-33f5-45e9-8bf4-a1779ddd1e47",
+          "Name": "IN[7]",
+          "Description": "cross_slope_pct (%)"
+        },
+        {
+          "Id": "d26352d6-e77c-4c2f-b5a3-beef6b3b3976",
+          "Name": "IN[8]",
+          "Description": "section_spacing (m)"
+        },
+        {
+          "Id": "1056171b-fabe-4325-a461-8c2d43059cce",
+          "Name": "IN[9]",
+          "Description": "layer_fl"
+        },
+        {
+          "Id": "5a984537-d61a-4820-aa57-4616eca5c403",
+          "Name": "IN[10]",
+          "Description": "surface_prefix"
         }
       ],
       "Outputs": [
@@ -493,7 +538,123 @@
       "Replication": "Disabled",
       "Description": "PIPs rasante + regiones corredor + feature lines + TIN plataforma",
       "Name": "PASO 7: Integrar Plataformas al Corredor",
-      "Code": "# PASO 7: Integrar Plataformas al Corredor (PIPs + Regiones + FL + TIN)\n# IN[0] = platforms  (lista Platform del PASO 6)\n# IN[1] = corridor_ids (del PASO 4)\n# IN[2] = alignment_ids (del PASO 1)\n# IN[3] = nombre rasante (str)\n# IN[4] = nombre assembly de plataforma (str)\n# OUT   = [surface_ids_plataforma, logs]\n\nimport clr, sys, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\nfrom Autodesk.AutoCAD.ApplicationServices import Application\nfrom Autodesk.AutoCAD.DatabaseServices import OpenMode\nfrom Autodesk.Civil.ApplicationServices import CivilApplication\n\n_dyn_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else r'C:\\Civil3D'\nif _dyn_dir not in sys.path:\n    sys.path.insert(0, _dyn_dir)\n\ntry:\n    from platforms import (\n        add_platform_pips_to_profile,\n        add_platform_regions_to_corridor,\n        create_platform_feature_lines,\n        create_platform_tin_surface,\n        KV_DEFAULT,\n    )\nexcept ImportError as ie:\n    OUT = [[], [f\"ERROR importando platforms.py: {ie}\"]]\n    raise SystemExit(0)\n\nlogs = []\n\nplatforms     = IN[0] if isinstance(IN[0], list) else [IN[0]]\ncorridor_ids  = IN[1] if isinstance(IN[1], list) else [IN[1]]\nalignment_ids = IN[2] if isinstance(IN[2], list) else [IN[2]]\nprofile_name  = str(IN[3])\nasm_name      = str(IN[4])\n\ndoc  = Application.DocumentManager.MdiActiveDocument\ndb   = doc.Database\ncdoc = CivilApplication.ActiveDocument\n\nfor ali_id, cor_id in zip(alignment_ids, corridor_ids):\n    # Buscar perfil de rasante\n    profile_id = None\n    with db.TransactionManager.StartTransaction() as tr:\n        ali = tr.GetObject(ali_id, OpenMode.ForRead)\n        for pid in ali.GetProfileIds():\n            prof = tr.GetObject(pid, OpenMode.ForRead)\n            if prof.Name.upper() == profile_name.upper():\n                profile_id = pid\n                tr.Commit()\n                break\n        else:\n            tr.Commit()\n\n    # A) Insertar PIPs en la rasante\n    if profile_id:\n        pip_logs = add_platform_pips_to_profile(ali_id, profile_id, platforms, KV_DEFAULT)\n        logs += pip_logs\n    else:\n        logs.append(f\"AVISO: Rasante '{profile_name}' no encontrada — saltando PIPs\")\n\n    # B) Regiones de corredor con assembly de plataforma\n    cor_logs = add_platform_regions_to_corridor(cor_id, ali_id, asm_name, platforms)\n    logs += cor_logs\n\n    # C) Feature Lines de bordes\n    fl_logs = create_platform_feature_lines(ali_id, platforms, spacing=5.0)\n    logs += fl_logs\n\n    # D) Superficie TIN de plataforma\n    tin_logs = create_platform_tin_surface(ali_id, platforms, road_half_width=4.0, spacing=5.0)\n    logs += tin_logs\n\nlogs.append(\"PASO 7 completado — Plataformas integradas al corredor.\")\nOUT = [platforms, logs]\n"
+      "Code": "# PASO 7: Integrar Plataformas al Corredor\n# IN[0] platforms       IN[1] corridor_ids   IN[2] alignment_ids\n# IN[3] profile_name    IN[4] asm_plataforma  IN[5] kv\n# IN[6] road_half_width IN[7] cross_slope_pct IN[8] section_spacing\n# IN[9] layer_fl        IN[10] surface_prefix\n# OUT = [platforms, logs]\nimport clr, sys, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path:\n        sys.path.insert(0, _p)\n\ntry:\n    from platforms import (\n        add_platform_pips_to_profile,\n        add_platform_regions_to_corridor,\n        create_platform_feature_lines,\n        create_platform_tin_surface,\n        resolve_profile_id, list_profile_names,\n        KV_DEFAULT, LAYER_PLATFORM_FL,\n    )\nexcept ImportError as ie:\n    OUT = [[], [\"ERROR importando platforms.py: %s\" % ie]]\n    raise SystemExit(0)\n\nlogs = []\nplatforms     = IN[0] if isinstance(IN[0], list) else [IN[0]]\ncorridor_ids  = IN[1] if isinstance(IN[1], list) else [IN[1]]\nalignment_ids = IN[2] if isinstance(IN[2], list) else [IN[2]]\nprofile_name  = str(IN[3]).strip()\nasm_name      = str(IN[4]).strip()\nkv            = float(IN[5]) if IN[5] is not None else KV_DEFAULT\nroad_hw       = float(IN[6]) if IN[6] is not None else 4.0\ncross_sl      = float(IN[7]) if IN[7] is not None else 2.5\nspacing       = float(IN[8]) if IN[8] is not None else 5.0\nlayer_fl      = str(IN[9]).strip()  if IN[9]  is not None else LAYER_PLATFORM_FL\nsurf_pfx      = str(IN[10]).strip() if IN[10] is not None else \"PLT\"\n\nfor ali_id, cor_id in zip(alignment_ids, corridor_ids):\n    profile_id = resolve_profile_id(ali_id, profile_name)\n    if profile_id is None:\n        avail = list_profile_names(ali_id)\n        logs.append(\"AVISO: rasante '%s' no encontrada. Disponibles: %s\" % (profile_name, avail))\n    else:\n        logs += add_platform_pips_to_profile(ali_id, profile_id, platforms, kv)\n\n    logs += add_platform_regions_to_corridor(cor_id, ali_id, asm_name, platforms)\n\n    logs += create_platform_feature_lines(\n        ali_id, platforms,\n        layer_name=layer_fl,\n        cross_slope_pct=cross_sl,\n        road_half_width=road_hw,\n        spacing=spacing,\n    )\n    logs += create_platform_tin_surface(\n        ali_id, platforms,\n        surface_name_prefix=surf_pfx,\n        road_half_width=road_hw,\n        cross_slope_pct=cross_sl,\n        spacing=spacing,\n    )\n\nlogs.append(\"PASO 7 completado — Plataformas integradas al corredor.\")\nOUT = [platforms, logs]\n"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "23178a4f-e0cd-49b3-bcb4-f4bf45ca8de5",
+      "Name": "KV (acuerdo vertical m)",
+      "Description": "Radio equiv. curva vertical (m). Default 800.",
+      "InputValue": 800.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "253b9d0e-5e11-4a32-b716-c192c7d4829a",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "e73d180a-7e7d-4fa7-921b-4d64fb1de2ad",
+      "Name": "Semi-ancho calzada (m)",
+      "Description": "Semi-ancho del camino existente en metros.",
+      "InputValue": 4.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "8578f4ec-4b13-4f95-9754-a68ef0e0b695",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "cee82eb7-79d2-4f25-81f7-d2af0ed8d920",
+      "Name": "Bombeo plataforma (%)",
+      "Description": "Pendiente transversal de drenaje de la plataforma.",
+      "InputValue": 2.5,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "38178371-ed9c-4ccf-afd0-906f8e173ee9",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "ea353cb4-6a00-41a5-ab51-9140d7321267",
+      "Name": "Espaciado secciones (m)",
+      "Description": "Distancia entre secciones transversales para volumetría.",
+      "InputValue": 5.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "eea9a25e-6888-47a6-acc1-d64910d9a563",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "b5ec87c2-77ca-4a3a-9a2e-1b4939335436",
+      "Name": "Nombre Assembly Plataforma",
+      "InputValue": "plataforma",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "94fb809a-6485-4674-bfb9-2c0ca6066d1a",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "4f5c2a0d-1a14-4da4-a46a-07e535065bac",
+      "Name": "Capa Feature Lines Plataforma",
+      "InputValue": "C-ROAD-PLATFORM",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "cb4104e9-7390-4a5c-b28c-19919188f077",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "3fbc2cb6-cdfe-4c92-877e-3522597bbbcf",
+      "Name": "Prefijo Superficie Plataforma",
+      "InputValue": "PLT",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "36883c60-d1cf-4d33-b744-9f17d0e9fc92",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
     }
   ],
   "Connectors": [
@@ -727,6 +888,62 @@
         "Name": "PASO 7: Integrar Plataformas",
         "X": 980,
         "Y": 1040
+      },
+      {
+        "Id": "23178a4f-e0cd-49b3-bcb4-f4bf45ca8de5",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "KV (acuerdo vertical m)",
+        "X": -480,
+        "Y": 880
+      },
+      {
+        "Id": "e73d180a-7e7d-4fa7-921b-4d64fb1de2ad",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Semi-ancho calzada (m)",
+        "X": -480,
+        "Y": 990
+      },
+      {
+        "Id": "cee82eb7-79d2-4f25-81f7-d2af0ed8d920",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Bombeo plataforma (%)",
+        "X": -480,
+        "Y": 1100
+      },
+      {
+        "Id": "ea353cb4-6a00-41a5-ab51-9140d7321267",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Espaciado secciones (m)",
+        "X": -480,
+        "Y": 1210
+      },
+      {
+        "Id": "b5ec87c2-77ca-4a3a-9a2e-1b4939335436",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Nombre Assembly Plataforma",
+        "X": -480,
+        "Y": 1320
+      },
+      {
+        "Id": "4f5c2a0d-1a14-4da4-a46a-07e535065bac",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Capa Feature Lines Plataforma",
+        "X": -480,
+        "Y": 1430
+      },
+      {
+        "Id": "3fbc2cb6-cdfe-4c92-877e-3522597bbbcf",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Prefijo Superficie Plataforma",
+        "X": -480,
+        "Y": 1540
       }
     ],
     "Annotations": [],
