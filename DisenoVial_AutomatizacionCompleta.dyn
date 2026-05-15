@@ -752,6 +752,190 @@
         }
       ],
       "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
+      "NodeType": "PythonScriptNode",
+      "Id": "23d4e38e-11f2-4f7a-82b2-1b30b16080e3",
+      "Name": "PASO 8: Plano Final",
+      "Code": "# PASO 8: Generación del Plano Final\n# IN[0] platforms         IN[1] alignment_ids    IN[2] profile_name\n# IN[3] surface_name      IN[4] road_half_width  IN[5] cross_slope_road_pct\n# IN[6] cross_slope_plt_pct   IN[7] section_spacing\n# IN[8] create_layout     IN[9] plan_scale       IN[10] layout_name\n# IN[11] exaggeration_v   IN[12] table_y         IN[13] sections_y\n# OUT = logs\nimport clr, sys, os\nclr.AddReference('AcMgd'); clr.AddReference('AcDbMgd'); clr.AddReference('AeccDbMgd')\n\n_dir = os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else ''\nfor _p in [_dir, os.path.join(_dir,'..'), r'C:\\Civil3D', r'C:\\Users\\Public\\Civil3D']:\n    if _p and _p not in sys.path: sys.path.insert(0, _p)\n\ntry:\n    from plano import generate_full_plan\n    from platforms import resolve_surface_id, resolve_profile_id, list_profile_names\nexcept ImportError as ie:\n    OUT = [\"ERROR: plano.py / platforms.py no encontrado: %s\" % ie]; raise SystemExit(0)\n\nlogs = []\nplatforms     = IN[0]  if isinstance(IN[0], list) else [IN[0]]\nalignment_ids = IN[1]  if isinstance(IN[1], list) else [IN[1]]\nprofile_name  = str(IN[2]).strip()\nsurface_name  = str(IN[3]).strip()\nroad_hw       = float(IN[4])  if IN[4]  is not None else 4.0\ncross_sl_road = float(IN[5])  if IN[5]  is not None else 2.5\ncross_sl_plt  = float(IN[6])  if IN[6]  is not None else 2.5\nspacing       = float(IN[7])  if IN[7]  is not None else 5.0\nmake_layout   = bool(IN[8])   if IN[8]  is not None else True\nplan_scale    = int(IN[9])    if IN[9]  is not None else 500\nlay_name      = str(IN[10]).strip() if IN[10] is not None else \"PLATAFORMAS\"\nexag_v        = float(IN[11]) if IN[11] is not None else 2.0\ntable_y       = float(IN[12]) if IN[12] is not None else 200.0\nsections_y    = float(IN[13]) if IN[13] is not None else -200.0\n\ntry:\n    surface_id = resolve_surface_id(surface_name)\nexcept ValueError as ex:\n    OUT = [str(ex)]; raise SystemExit(0)\n\nali_id     = alignment_ids[0]\nprofile_id = resolve_profile_id(ali_id, profile_name)\nif profile_id is None:\n    OUT = [\"Rasante '%s' no encontrada. Disponibles: %s\"\n           % (profile_name, list_profile_names(ali_id))]\n    raise SystemExit(0)\n\ntry:\n    logs = generate_full_plan(\n        surface_id, ali_id, profile_id, platforms,\n        road_half_width      = road_hw,\n        cross_slope_road_pct = cross_sl_road,\n        cross_slope_plt_pct  = cross_sl_plt,\n        spacing              = spacing,\n        create_layout        = make_layout,\n        plan_scale           = plan_scale,\n        layout_name          = lay_name,\n        table_y              = table_y,\n        sections_y           = sections_y,\n        section_exag_v       = exag_v,\n    )\nexcept Exception as ex:\n    import traceback\n    logs = [\"ERROR en generate_full_plan: %s\" % ex,\n            traceback.format_exc()]\n\nOUT = logs\n",
+      "Engine": "IronPython2",
+      "Inputs": [
+        {
+          "Id": "9b60d014-7aea-4baf-b43d-d76b57b45dec",
+          "Name": "IN[0]",
+          "Description": "platforms"
+        },
+        {
+          "Id": "6e174748-6b7c-4b49-a017-5ea49c5e7d46",
+          "Name": "IN[1]",
+          "Description": "alignment_ids"
+        },
+        {
+          "Id": "f65c92e1-4db9-430f-b6cd-e1455065f868",
+          "Name": "IN[2]",
+          "Description": "profile_name"
+        },
+        {
+          "Id": "498c88f7-8fc9-47ee-8ab5-550a8843d6c0",
+          "Name": "IN[3]",
+          "Description": "surface_name"
+        },
+        {
+          "Id": "b30325a1-f9d4-4af1-9358-671065a10497",
+          "Name": "IN[4]",
+          "Description": "road_half_width"
+        },
+        {
+          "Id": "d398cd04-efeb-4c62-9f29-85326bfe4f9f",
+          "Name": "IN[5]",
+          "Description": "cross_slope_road_pct"
+        },
+        {
+          "Id": "68bddc93-3b60-4977-8d4f-eaa24dd3f6c1",
+          "Name": "IN[6]",
+          "Description": "cross_slope_plt_pct"
+        },
+        {
+          "Id": "677edd3d-ed89-4443-bd86-619885384a05",
+          "Name": "IN[7]",
+          "Description": "section_spacing"
+        },
+        {
+          "Id": "5c94f02c-29ae-4256-868d-d0539ee74b5d",
+          "Name": "IN[8]",
+          "Description": "create_layout"
+        },
+        {
+          "Id": "92529127-ddb6-4d04-a338-341d58886700",
+          "Name": "IN[9]",
+          "Description": "plan_scale"
+        },
+        {
+          "Id": "b032f6cf-d3b4-4f78-bd24-d1890ce8c8f2",
+          "Name": "IN[10]",
+          "Description": "layout_name"
+        },
+        {
+          "Id": "1a55fe0d-9482-4664-920d-730fc273351b",
+          "Name": "IN[11]",
+          "Description": "exaggeration_v"
+        },
+        {
+          "Id": "681ff82c-f286-44b4-a060-4d4637cb2936",
+          "Name": "IN[12]",
+          "Description": "table_y"
+        },
+        {
+          "Id": "396f620d-8e39-43c3-b852-681bdc505cd3",
+          "Name": "IN[13]",
+          "Description": "sections_y"
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "0089d7ec-43db-43a6-a41f-03bad2860e5c",
+          "Name": "logs",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "BooleanInputNode",
+      "Id": "7b7aaa52-c9e8-43eb-ba73-47f7bc0faf4e",
+      "Name": "Crear Layout (S/N)",
+      "InputValue": true,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "d8124426-3145-403a-a3c0-7224befbdec7",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "1c71c4d0-48e4-4690-93b4-f2d57ff2dfc8",
+      "Name": "Escala plano (1:N)",
+      "InputValue": 500,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "62ae04bc-8faf-468b-9c59-7e0a226731fb",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.StringInputNode, DynamoCore",
+      "NodeType": "StringInputNode",
+      "Id": "e3c4906d-4574-4a67-99b4-1b03989d5b35",
+      "Name": "Nombre Layout",
+      "InputValue": "PLATAFORMAS",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "6e62c65a-0c9f-4a18-889a-f342d7205295",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "61fd43b8-6c28-4340-9622-7d69b0cbfa83",
+      "Name": "Exageración vert. secciones",
+      "InputValue": 2.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "caf7d895-f332-430c-af75-397c0f589879",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "c3bf6a04-2639-4784-8583-aea0f1342df5",
+      "Name": "Y tabla volúmenes (m)",
+      "InputValue": 200.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "a939a3fa-6c6e-430b-95fe-95d5fad60c7b",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "NodeType": "NumberInputNode",
+      "Id": "bc0517fa-bc3f-43f3-99be-c50a5adcf5d8",
+      "Name": "Y secciones transversales (m)",
+      "InputValue": -200.0,
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "21c64cb8-4cc3-4989-a384-2d5fc4208781",
+          "Name": "",
+          "Description": ""
+        }
+      ],
+      "Replication": "Disabled"
     }
   ],
   "Connectors": [
@@ -1073,6 +1257,62 @@
         "Name": "Bombeo calzada (%)",
         "X": -480,
         "Y": 1980
+      },
+      {
+        "Id": "7b7aaa52-c9e8-43eb-ba73-47f7bc0faf4e",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Crear Layout (S/N)",
+        "X": -480,
+        "Y": 2100
+      },
+      {
+        "Id": "1c71c4d0-48e4-4690-93b4-f2d57ff2dfc8",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Escala plano (1:N)",
+        "X": -480,
+        "Y": 2200
+      },
+      {
+        "Id": "e3c4906d-4574-4a67-99b4-1b03989d5b35",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Nombre Layout",
+        "X": -480,
+        "Y": 2300
+      },
+      {
+        "Id": "61fd43b8-6c28-4340-9622-7d69b0cbfa83",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Exageración vert. secciones",
+        "X": -480,
+        "Y": 2400
+      },
+      {
+        "Id": "c3bf6a04-2639-4784-8583-aea0f1342df5",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Y tabla volúmenes (m)",
+        "X": -480,
+        "Y": 2500
+      },
+      {
+        "Id": "bc0517fa-bc3f-43f3-99be-c50a5adcf5d8",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Name": "Y secciones transversales (m)",
+        "X": -480,
+        "Y": 2600
+      },
+      {
+        "Id": "23d4e38e-11f2-4f7a-82b2-1b30b16080e3",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Name": "PASO 8: Plano Final",
+        "X": 200,
+        "Y": 2300
       }
     ],
     "Annotations": [],
