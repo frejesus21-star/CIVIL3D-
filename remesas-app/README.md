@@ -14,6 +14,8 @@ Aplicación full-stack para enviar dinero desde **Chile (CLP)** a **Venezuela (V
 - Registro/login con **validación de RUT chileno** (dígito verificador, módulo 11)
 - JWT con expiración de 7 días, contraseñas con bcrypt
 - Edición de perfil y cambio de contraseña
+- **Autenticación en dos pasos (2FA)** opcional con TOTP, compatible con
+  Google Authenticator / Authy (implementación propia según RFC 6238)
 - Rate limiting y cabeceras de seguridad básicas
 
 ### Verificación de identidad (KYC)
@@ -50,7 +52,8 @@ Acceso restringido a usuarios con rol admin (doble protección: middleware
 `adminAuth` en el backend + guardia de ruta en el frontend). Disponible en `/admin`.
 
 - **Dashboard**: total de usuarios, KYC pendientes, volumen del día y del mes,
-  distribución de transferencias por estado
+  distribución de transferencias por estado y **gráfico de volumen diario**
+  (últimos 14 días, SVG sin dependencias)
 - **Usuarios**: listado paginado con búsqueda (nombre/email/RUT), detalle con
   historial, y **aprobación/rechazo de KYC** (notifica al usuario)
 - **Transferencias**: listado con filtros por **estado** y **rango de fechas**,
@@ -74,8 +77,9 @@ curl -X POST http://localhost:4000/api/admin/seed \
 
 ## Calidad
 
-- Suite de **tests** del backend con el runner nativo de Node (`npm test`):
-  validación de RUT/cédula/teléfono, cálculos de cotización (ida y vuelta) y límites por nivel.
+- Suite de **tests** del backend con el runner nativo de Node (`npm test`, 27 tests):
+  validación de RUT/cédula/teléfono, cálculos de cotización (ida y vuelta),
+  límites por nivel y módulo TOTP (verificado contra los vectores del RFC 6238).
 
 ## Cómo correr
 
@@ -113,6 +117,7 @@ remesas-app/
 │   └── src/
 │       ├── config/database.js          # SQLite + schema + migraciones + config
 │       ├── utils/validators.js         # RUT, cédula VE, teléfono pago móvil
+│       ├── utils/totp.js               # TOTP (RFC 6238) para 2FA
 │       ├── services/
 │       │   ├── exchangeService.js      # tasas + cotización ida/vuelta + respaldo + comisión
 │       │   ├── limitsService.js        # límites por nivel KYC
@@ -144,5 +149,5 @@ remesas-app/
 - Integración con procesador de pagos real (lado Chile) y red de pago en Venezuela
 - KYC real con verificación documental automatizada
 - Notificaciones por email/SMS/push
-- Autenticación de dos factores (2FA)
-- Reportes/gráficos de volumen en el panel admin
+- Códigos QR escaneables para el alta de 2FA (hoy se ingresa la clave manualmente)
+- Códigos de respaldo de un solo uso para recuperación de 2FA
