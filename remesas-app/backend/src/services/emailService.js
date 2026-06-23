@@ -132,4 +132,15 @@ async function enviarPlantilla(userId, key, ...args) {
   }
 }
 
-module.exports = { enviar, enviarPlantilla, plantillas, modoReal };
+// Verifica la conexión con el servidor SMTP (útil para diagnosticar config).
+async function verificarConexion() {
+  if (!modoReal) return { ok: false, modoReal: false, mensaje: 'SMTP no configurado: los correos se simulan en consola.' };
+  try {
+    await transporter.verify();
+    return { ok: true, modoReal: true, mensaje: 'Conexión SMTP correcta.' };
+  } catch (err) {
+    return { ok: false, modoReal: true, mensaje: `Error de conexión SMTP: ${err.message}` };
+  }
+}
+
+module.exports = { enviar, enviarPlantilla, plantillas, modoReal, verificarConexion };

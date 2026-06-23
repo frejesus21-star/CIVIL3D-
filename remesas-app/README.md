@@ -76,6 +76,40 @@ curl -X POST http://localhost:4000/api/admin/seed \
   -d '{"email":"tu@email.com","secret":"<ADMIN_SEED_SECRET>"}'
 ```
 
+## Conectar un proveedor de email real
+
+Por defecto los correos (bienvenida, verificación, recuperación de contraseña,
+KYC, transferencias) se **simulan en consola**. Para enviarlos de verdad basta
+con definir variables `SMTP_*` en `backend/.env` — la app usa SMTP estándar, así
+que sirve cualquier proveedor.
+
+**Pasos generales (válidos para cualquier proveedor):**
+1. Crea una cuenta en el proveedor (SendGrid, Amazon SES, Mailgun, Postmark…).
+2. **Verifica tu dominio remitente** y configura los registros DNS que te indique
+   (SPF, DKIM y, recomendado, DMARC). Sin esto, los correos caen en spam o se
+   rechazan.
+3. Genera credenciales **SMTP** (no confundir con API keys de la consola).
+4. Copia los valores a `backend/.env` (ver `.env.example`, opciones A/B/C).
+5. Define `SMTP_FROM` con un remitente **del dominio verificado** y `APP_URL` con
+   la URL pública de la app (se usa en los enlaces de los correos).
+6. Verifica la configuración y envía un correo de prueba:
+
+```bash
+cd backend
+npm run test:email            # solo verifica la conexión SMTP
+npm run test:email tu@correo.com   # además envía un correo de prueba
+```
+
+**SendGrid** (rápido para empezar): el usuario SMTP es siempre la palabra literal
+`apikey` y la contraseña es tu API Key. Host `smtp.sendgrid.net`, puerto `587`.
+
+**Amazon SES** (económico a escala): usa las *credenciales SMTP* de SES (no las
+claves de acceso de AWS). Host `email-smtp.<región>.amazonaws.com`, puerto `587`.
+Recuerda salir del *sandbox* de SES para enviar a destinatarios no verificados.
+
+> Si un envío falla, la operación principal (registro, transferencia, etc.) **no
+> se interrumpe**: el error de correo se registra en consola y el flujo continúa.
+
 ## Calidad
 
 - Suite de **tests unitarios** del backend con el runner nativo de Node
