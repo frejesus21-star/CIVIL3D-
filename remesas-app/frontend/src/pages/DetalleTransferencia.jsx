@@ -15,7 +15,19 @@ export default function DetalleTransferencia() {
   const [t, setT] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelando, setCancelando] = useState(false);
+  const [descargando, setDescargando] = useState(false);
   const pollRef = useRef(null);
+
+  async function descargarPDF() {
+    setDescargando(true);
+    try {
+      await api.descargarComprobante(id, t.referencia);
+    } catch {
+      // silencioso
+    } finally {
+      setDescargando(false);
+    }
+  }
 
   function cargar() {
     return api.transferencia(id).then(setT).catch(() => {}).finally(() => setLoading(false));
@@ -56,6 +68,9 @@ export default function DetalleTransferencia() {
       <div className="flex items-center gap-3 print:hidden">
         <Link to="/historial" className="text-gray-400 hover:text-gray-600">←</Link>
         <h1 className="text-xl font-bold flex-1">Detalle de transferencia</h1>
+        <button onClick={descargarPDF} disabled={descargando} className="text-sm text-gray-500 hover:text-gray-900" title="Descargar comprobante PDF">
+          {descargando ? '…' : '⬇️'}
+        </button>
         <button onClick={() => window.print()} className="text-sm text-gray-500 hover:text-gray-900" title="Imprimir comprobante">🖨️</button>
       </div>
 

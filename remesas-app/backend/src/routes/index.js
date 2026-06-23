@@ -71,6 +71,7 @@ router.get('/transferencias/cotizar', auth, transCtrl.cotizar);
 router.get('/transferencias', auth, transCtrl.listar);
 router.post('/transferencias', auth, transCtrl.crear);
 router.get('/transferencias/:id', auth, transCtrl.obtener);
+router.get('/transferencias/:id/comprobante', auth, transCtrl.comprobantePDF);
 router.post('/transferencias/:id/cancelar', auth, transCtrl.cancelar);
 
 // ── ADMIN ──────────────────────────────────────────────────────────────────

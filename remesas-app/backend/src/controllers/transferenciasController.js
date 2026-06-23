@@ -3,6 +3,7 @@ const db = require('../config/database');
 const { getRates, calcularTransferencia, calcularInverso } = require('../services/exchangeService');
 const { validarEnvio } = require('../services/limitsService');
 const notif = require('../services/notificationService');
+const comprobante = require('../services/comprobanteService');
 
 function genReferencia() {
   return 'REM' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -147,6 +148,24 @@ function obtener(req, res) {
   res.json({ ...row, eventos });
 }
 
+// Genera y descarga el comprobante de la transferencia en PDF
+function comprobantePDF(req, res) {
+  const row = db.prepare(`
+    SELECT t.*,
+      co.banco as origen_banco, co.tipo_cuenta as origen_tipo, co.numero_cuenta as origen_numero, co.titular as origen_titular,
+      d.nombre as dest_nombre, d.tipo as dest_tipo, d.banco as dest_banco, d.numero_cuenta as dest_numero, d.cedula as dest_cedula, d.telefono as dest_telefono
+    FROM transferencias t
+    JOIN cuentas_origen co ON t.cuenta_origen_id = co.id
+    JOIN destinatarios d ON t.destinatario_id = d.id
+    WHERE t.id=? AND t.user_id=?
+  `).get(req.params.id, req.userId);
+  if (!row) return res.status(404).json({ error: 'Transferencia no encontrada' });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="comprobante_${row.referencia}.pdf"`);
+  comprobante.generar(row, res);
+}
+
 // Cancelar una transferencia que aún está pendiente
 function cancelar(req, res) {
   const t = db.prepare('SELECT * FROM transferencias WHERE id=? AND user_id=?').get(req.params.id, req.userId);
@@ -165,4 +184,4 @@ function cancelar(req, res) {
   res.json({ ok: true });
 }
 
-module.exports = { cotizar, crear, listar, obtener, cancelar };
+module.exports = { cotizar, crear, listar, obtener, cancelar, comprobantePDF };

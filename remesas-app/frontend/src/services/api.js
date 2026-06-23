@@ -110,6 +110,7 @@ export const api = {
   adminTasas: () => request('/admin/tasas'),
   adminSetTasas: (body) => request('/admin/tasas', { method: 'POST', body: JSON.stringify(body) }),
   adminResetTasas: () => request('/admin/tasas/cache', { method: 'DELETE' }),
+  descargarComprobante: (id, ref) => descargar(`/transferencias/${id}/comprobante`, `comprobante_${ref}.pdf`),
   configPublica: () => request('/config/publica'),
   adminConfig: () => request('/admin/config'),
   adminLog: (page = 1, accion = '', desde = '', hasta = '') => request(`/admin/log?${qs({ page, accion, desde, hasta })}`),
