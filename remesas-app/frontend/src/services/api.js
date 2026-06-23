@@ -74,4 +74,7 @@ export const api = {
   adminTasas: () => request('/admin/tasas'),
   adminSetTasas: (body) => request('/admin/tasas', { method: 'POST', body: JSON.stringify(body) }),
   adminResetTasas: () => request('/admin/tasas/cache', { method: 'DELETE' }),
+  configPublica: () => request('/config/publica'),
+  adminConfig: () => request('/admin/config'),
+  adminSetConfig: (body) => request('/admin/config', { method: 'PATCH', body: JSON.stringify(body) }),
 };

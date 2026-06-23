@@ -28,6 +28,12 @@ router.get('/notificaciones/contador', auth, notifCtrl.contador);
 router.post('/notificaciones/:id/leida', auth, notifCtrl.marcarLeida);
 router.post('/notificaciones/leer-todas', auth, notifCtrl.marcarTodas);
 
+// Configuración pública (solo lectura, sin auth)
+router.get('/config/publica', (req, res) => {
+  const { getConfig } = require('../config/database');
+  res.json({ mensaje_mantenimiento: getConfig('mensaje_mantenimiento') || '' });
+});
+
 // Tasas públicas
 router.get('/tasas', async (req, res) => {
   try {
@@ -70,6 +76,8 @@ router.patch('/admin/transferencias/:id', adminAuth, adminCtrl.actualizarTransfe
 router.get('/admin/tasas', adminAuth, adminCtrl.getTasas);
 router.post('/admin/tasas', adminAuth, adminCtrl.setTasas);
 router.delete('/admin/tasas/cache', adminAuth, adminCtrl.resetTasas);
+router.get('/admin/config', adminAuth, adminCtrl.getConfigAdmin);
+router.patch('/admin/config', adminAuth, adminCtrl.setConfigAdmin);
 
 // Promoción de usuario a admin (solo por consola / primer uso protegido por contraseña de env)
 router.post('/admin/seed', (req, res) => {

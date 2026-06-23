@@ -94,6 +94,13 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS configuracion (
+    clave TEXT PRIMARY KEY,
+    valor TEXT NOT NULL,
+    descripcion TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE INDEX IF NOT EXISTS idx_trans_user ON transferencias(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_notif_user ON notificaciones(user_id, leida);
   CREATE INDEX IF NOT EXISTS idx_eventos_trans ON transferencia_eventos(transferencia_id);
@@ -119,4 +126,23 @@ ensureColumn('users', 'is_admin', 'is_admin INTEGER NOT NULL DEFAULT 0');
 ensureColumn('transferencias', 'notas_admin', 'notas_admin TEXT');
 ensureColumn('tasas_cache', 'manual', 'manual INTEGER NOT NULL DEFAULT 0');
 
+// Valores por defecto de configuración
+db.prepare(`
+  INSERT OR IGNORE INTO configuracion (clave, valor, descripcion) VALUES
+    ('comision_pct', '2.5', 'Comisión aplicada a cada transferencia (porcentaje)'),
+    ('comision_minima_clp', '0', 'Comisión mínima en CLP (0 = sin mínimo)'),
+    ('mensaje_mantenimiento', '', 'Mensaje de mantenimiento visible en la app (vacío = sin mensaje)')
+`).run();
+
+function getConfig(clave) {
+  const row = db.prepare('SELECT valor FROM configuracion WHERE clave=?').get(clave);
+  return row ? row.valor : null;
+}
+
+function setConfig(clave, valor) {
+  db.prepare('UPDATE configuracion SET valor=?, updated_at=CURRENT_TIMESTAMP WHERE clave=?').run(String(valor), clave);
+}
+
 module.exports = db;
+module.exports.getConfig = getConfig;
+module.exports.setConfig = setConfig;

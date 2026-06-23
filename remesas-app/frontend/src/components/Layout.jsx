@@ -24,6 +24,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [noLeidas, setNoLeidas] = useState(0);
+  const [mantenimiento, setMantenimiento] = useState('');
 
   useEffect(() => {
     let activo = true;
@@ -34,6 +35,10 @@ export default function Layout({ children }) {
     const interval = setInterval(cargar, 15000);
     return () => { activo = false; clearInterval(interval); };
   }, [location.pathname]);
+
+  useEffect(() => {
+    api.configPublica().then(d => { if (d.mensaje_mantenimiento) setMantenimiento(d.mensaje_mantenimiento); }).catch(() => {});
+  }, []);
 
   function handleLogout() {
     logout();
@@ -101,6 +106,12 @@ export default function Layout({ children }) {
           </div>
         </div>
       </header>
+
+      {mantenimiento && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-sm text-center px-4 py-2">
+          ⚠️ {mantenimiento}
+        </div>
+      )}
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
         {children}

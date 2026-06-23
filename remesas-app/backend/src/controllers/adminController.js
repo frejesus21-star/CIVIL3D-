@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { getConfig, setConfig } = require('../config/database');
 const { getRates, clearCache } = require('../services/exchangeService');
 
 // ── Dashboard de estadísticas ──────────────────────────────────────────────
@@ -181,4 +182,34 @@ function resetTasas(req, res) {
   res.json({ ok: true, mensaje: 'Cache borrada. Próxima consulta obtendrá tasas de la API.' });
 }
 
-module.exports = { stats, listarUsuarios, getUsuario, aprobarKYC, rechazarKYC, listarTransferencias, actualizarTransferencia, getTasas, setTasas, resetTasas };
+// ── Configuración general ──────────────────────────────────────────────────
+function getConfigAdmin(req, res) {
+  const claves = ['comision_pct', 'comision_minima_clp', 'mensaje_mantenimiento'];
+  const config = {};
+  for (const c of claves) config[c] = getConfig(c);
+  res.json(config);
+}
+
+function setConfigAdmin(req, res) {
+  const { comision_pct, comision_minima_clp, mensaje_mantenimiento } = req.body;
+
+  if (comision_pct !== undefined) {
+    const v = parseFloat(comision_pct);
+    if (isNaN(v) || v < 0 || v > 20) return res.status(400).json({ error: 'La comisión debe estar entre 0% y 20%' });
+    setConfig('comision_pct', v);
+  }
+
+  if (comision_minima_clp !== undefined) {
+    const v = parseFloat(comision_minima_clp);
+    if (isNaN(v) || v < 0) return res.status(400).json({ error: 'La comisión mínima no puede ser negativa' });
+    setConfig('comision_minima_clp', v);
+  }
+
+  if (mensaje_mantenimiento !== undefined) {
+    setConfig('mensaje_mantenimiento', String(mensaje_mantenimiento).slice(0, 300));
+  }
+
+  res.json({ ok: true });
+}
+
+module.exports = { stats, listarUsuarios, getUsuario, aprobarKYC, rechazarKYC, listarTransferencias, actualizarTransferencia, getTasas, setTasas, resetTasas, getConfigAdmin, setConfigAdmin };

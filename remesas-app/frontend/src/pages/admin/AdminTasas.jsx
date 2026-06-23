@@ -9,6 +9,12 @@ export default function AdminTasas() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
 
+  // Configuración general
+  const [config, setConfig] = useState({ comision_pct: '', comision_minima_clp: '', mensaje_mantenimiento: '' });
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [msgConfig, setMsgConfig] = useState('');
+  const [errorConfig, setErrorConfig] = useState('');
+
   async function cargar() {
     const d = await api.adminTasas().catch(() => null);
     if (d) {
@@ -17,7 +23,12 @@ export default function AdminTasas() {
     }
   }
 
-  useEffect(() => { cargar(); }, []);
+  async function cargarConfig() {
+    const c = await api.adminConfig().catch(() => null);
+    if (c) setConfig({ comision_pct: c.comision_pct, comision_minima_clp: c.comision_minima_clp, mensaje_mantenimiento: c.mensaje_mantenimiento || '' });
+  }
+
+  useEffect(() => { cargar(); cargarConfig(); }, []);
 
   async function guardar(e) {
     e.preventDefault();
@@ -25,7 +36,7 @@ export default function AdminTasas() {
     setSaving(true);
     try {
       await api.adminSetTasas({ usd_clp: parseFloat(form.usd_clp), usd_ves: parseFloat(form.usd_ves) });
-      setMsg('Tasas actualizadas. Próximas cotizaciones usarán estos valores.');
+      setMsg('Tasas actualizadas. Las próximas cotizaciones usarán estos valores.');
       cargar();
     } catch (err) {
       setError(err.message);
@@ -41,22 +52,41 @@ export default function AdminTasas() {
     cargar();
   }
 
+  async function guardarConfig(e) {
+    e.preventDefault();
+    setErrorConfig(''); setMsgConfig('');
+    setSavingConfig(true);
+    try {
+      await api.adminSetConfig({
+        comision_pct: parseFloat(config.comision_pct),
+        comision_minima_clp: parseFloat(config.comision_minima_clp),
+        mensaje_mantenimiento: config.mensaje_mantenimiento,
+      });
+      setMsgConfig('Configuración guardada correctamente.');
+      cargarConfig();
+    } catch (err) {
+      setErrorConfig(err.message);
+    } finally {
+      setSavingConfig(false);
+    }
+  }
+
   function calcPreview() {
     const usd_clp = parseFloat(form.usd_clp);
     const usd_ves = parseFloat(form.usd_ves);
+    const comision = parseFloat(config.comision_pct) || 2.5;
     if (!usd_clp || !usd_ves) return null;
-    const comision = 0.025;
     const monto_clp = 100000;
-    const neto = monto_clp * (1 - comision);
+    const neto = monto_clp * (1 - comision / 100);
     const monto_ves = (neto / usd_clp) * usd_ves;
-    return { monto_clp, monto_ves: Math.round(monto_ves) };
+    return { monto_clp, monto_ves: Math.round(monto_ves), comision };
   }
 
   const preview = calcPreview();
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Gestión de Tasas</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Tasas y Configuración</h1>
 
       {msg && <div className="mb-4 px-4 py-3 bg-green-50 text-green-700 rounded-lg text-sm">{msg}</div>}
       {error && <div className="mb-4 px-4 py-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
@@ -64,7 +94,7 @@ export default function AdminTasas() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Estado actual */}
         <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h2 className="font-semibold text-gray-700 mb-4">Estado actual</h2>
+          <h2 className="font-semibold text-gray-700 mb-4">Tasas actuales</h2>
           {info && (
             <div className="space-y-3">
               <InfoRow label="USD / CLP" value={info.rates.usd_clp?.toLocaleString('es-CL', { maximumFractionDigits: 2 })} />
@@ -73,7 +103,7 @@ export default function AdminTasas() {
               {info.cache && <InfoRow label="Última actualización" value={new Date(info.cache.updated_at).toLocaleString('es-CL')} />}
               {info.cache?.manual === 1 && (
                 <div className="mt-2 px-3 py-2 bg-amber-50 text-amber-700 text-xs rounded-lg">
-                  ⚠️ Usando tasa manual configurada por admin
+                  ⚠️ Usando tasa manual configurada por administrador
                 </div>
               )}
               {info.rates.respaldo && (
@@ -88,7 +118,7 @@ export default function AdminTasas() {
           </button>
         </div>
 
-        {/* Formulario */}
+        {/* Formulario tasas */}
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <h2 className="font-semibold text-gray-700 mb-1">Ajuste manual de tasas</h2>
           <p className="text-xs text-gray-400 mb-4">Úsalo cuando las APIs externas estén caídas o la tasa sea incorrecta. Sobreescribe la caché existente.</p>
@@ -112,7 +142,7 @@ export default function AdminTasas() {
             {preview && (
               <div className="px-4 py-3 bg-blue-50 rounded-lg text-sm text-blue-700">
                 Ejemplo: $100.000 CLP → <strong>{preview.monto_ves.toLocaleString('es-VE')} Bs</strong>
-                <span className="text-xs ml-1 text-blue-400">(con comisión 2,5%)</span>
+                <span className="text-xs ml-1 text-blue-400">(con comisión {preview.comision}%)</span>
               </div>
             )}
 
@@ -121,6 +151,56 @@ export default function AdminTasas() {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Configuración general */}
+      <div className="mt-6 bg-white rounded-xl border border-gray-100 p-5">
+        <h2 className="font-semibold text-gray-700 mb-1">Configuración general</h2>
+        <p className="text-xs text-gray-400 mb-4">Ajusta la comisión del servicio y otros parámetros operativos.</p>
+
+        {msgConfig && <div className="mb-4 px-4 py-3 bg-green-50 text-green-700 rounded-lg text-sm">{msgConfig}</div>}
+        {errorConfig && <div className="mb-4 px-4 py-3 bg-red-50 text-red-600 rounded-lg text-sm">{errorConfig}</div>}
+
+        <form onSubmit={guardarConfig} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-600 block mb-1">
+              Comisión por transferencia (%)
+            </label>
+            <input type="number" step="0.01" min="0" max="20"
+              className="input w-full" value={config.comision_pct}
+              onChange={e => setConfig(c => ({ ...c, comision_pct: e.target.value }))}
+              required />
+            <p className="text-xs text-gray-400 mt-1">Entre 0% y 20%. Actualmente: {config.comision_pct}%</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-600 block mb-1">
+              Comisión mínima (CLP)
+            </label>
+            <input type="number" step="1" min="0"
+              className="input w-full" value={config.comision_minima_clp}
+              onChange={e => setConfig(c => ({ ...c, comision_minima_clp: e.target.value }))}
+              required />
+            <p className="text-xs text-gray-400 mt-1">0 = sin mínimo</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-600 block mb-1">
+              Mensaje de mantenimiento
+            </label>
+            <input type="text" maxLength={300}
+              className="input w-full" value={config.mensaje_mantenimiento}
+              placeholder="Vacío = sin aviso"
+              onChange={e => setConfig(c => ({ ...c, mensaje_mantenimiento: e.target.value }))} />
+            <p className="text-xs text-gray-400 mt-1">Se muestra en el banner superior de la app</p>
+          </div>
+
+          <div className="md:col-span-3">
+            <button type="submit" disabled={savingConfig} className="btn-primary">
+              {savingConfig ? 'Guardando...' : 'Guardar configuración'}
+            </button>
+          </div>
+        </form>
       </div>
     </AdminLayout>
   );

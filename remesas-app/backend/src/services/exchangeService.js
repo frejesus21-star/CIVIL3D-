@@ -1,5 +1,12 @@
 const fetch = require('node-fetch');
 const db = require('../config/database');
+const { getConfig } = require('../config/database');
+
+function getComisionPct() {
+  const val = getConfig('comision_pct');
+  const n = parseFloat(val);
+  return (!isNaN(n) && n >= 0 && n <= 100) ? n : 2.5;
+}
 
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 min
 
@@ -64,7 +71,7 @@ async function getRates() {
   }
 }
 
-function calcularTransferencia(monto_clp, rates, comision_pct = 2.5) {
+function calcularTransferencia(monto_clp, rates, comision_pct = getComisionPct()) {
   const comision_clp = monto_clp * (comision_pct / 100);
   const monto_neto_clp = monto_clp - comision_clp;
   const monto_usd = monto_neto_clp / rates.usd_clp;
@@ -82,7 +89,7 @@ function calcularTransferencia(monto_clp, rates, comision_pct = 2.5) {
 }
 
 // Cotización inversa: dado cuánto debe LLEGAR en Bs., calcula cuánto pagar en CLP
-function calcularInverso(monto_ves, rates, comision_pct = 2.5) {
+function calcularInverso(monto_ves, rates, comision_pct = getComisionPct()) {
   const monto_usd = monto_ves / rates.usd_ves;
   const monto_neto_clp = monto_usd * rates.usd_clp;
   // monto_neto = monto_clp * (1 - comision_pct/100)  =>  monto_clp = monto_neto / (1 - c)
@@ -103,4 +110,4 @@ async function getRatesWithInvalidation() {
   return _origGetRates();
 }
 
-module.exports = { getRates: getRatesWithInvalidation, calcularTransferencia, calcularInverso, clearCache };
+module.exports = { getRates: getRatesWithInvalidation, calcularTransferencia, calcularInverso, clearCache, getComisionPct };
