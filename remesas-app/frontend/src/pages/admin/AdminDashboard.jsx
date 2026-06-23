@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import AdminLayout from './AdminLayout';
 import { api } from '../../services/api';
 import { fmtCLP } from '../../utils/format';
+import VolumenChart from './VolumenChart';
 
 function Stat({ label, value, sub, color = 'text-gray-900' }) {
   return (
@@ -49,6 +50,11 @@ export default function AdminDashboard() {
           value={fmtCLP(data.transMes.vol)}
           sub={`${data.transMes.n} operaciones`}
         />
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
+        <h2 className="font-semibold text-gray-700 mb-4">Volumen diario (últimos 14 días)</h2>
+        <VolumenChart serie={data.serie} />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 p-5">

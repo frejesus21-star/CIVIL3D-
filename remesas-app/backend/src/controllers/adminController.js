@@ -11,7 +11,24 @@ function stats(req, res) {
   const transHoy = db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol FROM transferencias WHERE DATE(created_at)=?").get(hoy);
   const transMes = db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol FROM transferencias WHERE strftime('%Y-%m',created_at)=strftime('%Y-%m','now')").get();
   const porEstado = db.prepare("SELECT estado, COUNT(*) as n FROM transferencias GROUP BY estado").all();
-  res.json({ totalUsuarios, kycPendientes, transHoy, transMes, porEstado });
+
+  // Serie diaria de los últimos 14 días (para el gráfico de volumen)
+  const filas = db.prepare(`
+    SELECT DATE(created_at) as dia, COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol
+    FROM transferencias
+    WHERE DATE(created_at) >= DATE('now','-13 days')
+    GROUP BY DATE(created_at)
+  `).all();
+  const mapa = Object.fromEntries(filas.map(f => [f.dia, f]));
+  const serie = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dia = d.toISOString().slice(0, 10);
+    serie.push({ dia, n: mapa[dia]?.n || 0, vol: mapa[dia]?.vol || 0 });
+  }
+
+  res.json({ totalUsuarios, kycPendientes, transHoy, transMes, porEstado, serie });
 }
 
 // ── Usuarios ───────────────────────────────────────────────────────────────
