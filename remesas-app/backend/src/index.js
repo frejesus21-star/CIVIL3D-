@@ -26,6 +26,8 @@ app.use((req, res, next) => {
 app.use('/api', rateLimiter({ windowMs: 60000, max: 120 }));
 app.use('/api/auth/login', rateLimiter({ windowMs: 60000, max: 10 }));
 app.use('/api/auth/register', rateLimiter({ windowMs: 60000, max: 5 }));
+app.use('/api/auth/recuperar', rateLimiter({ windowMs: 60000, max: 5 }));
+app.use('/api/auth/restablecer', rateLimiter({ windowMs: 60000, max: 10 }));
 
 app.use('/api', routes);
 

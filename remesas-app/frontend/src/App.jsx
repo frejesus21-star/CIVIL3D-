@@ -4,6 +4,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import RecuperarPassword from './pages/RecuperarPassword';
+import RestablecerPassword from './pages/RestablecerPassword';
+import VerificarEmail from './pages/VerificarEmail';
 import Dashboard from './pages/Dashboard';
 import Transferir from './pages/Transferir';
 import Historial from './pages/Historial';
@@ -40,6 +43,9 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+        <Route path="/recuperar" element={<RecuperarPassword />} />
+        <Route path="/restablecer" element={<RestablecerPassword />} />
+        <Route path="/verificar-email" element={<VerificarEmail />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/transferir" element={<ProtectedRoute><Transferir /></ProtectedRoute>} />
         <Route path="/historial" element={<ProtectedRoute><Historial /></ProtectedRoute>} />

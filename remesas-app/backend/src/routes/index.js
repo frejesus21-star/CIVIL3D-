@@ -19,6 +19,12 @@ router.patch('/auth/perfil', auth, authCtrl.actualizarPerfil);
 router.post('/auth/cambiar-password', auth, authCtrl.cambiarPassword);
 router.get('/auth/stats', auth, authCtrl.stats);
 
+// Verificación de email y recuperación de contraseña
+router.post('/auth/verificar-email', authCtrl.verificarEmail);
+router.post('/auth/reenviar-verificacion', auth, authCtrl.reenviarVerificacion);
+router.post('/auth/recuperar', authCtrl.solicitarRecuperacion);
+router.post('/auth/restablecer', authCtrl.restablecerPassword);
+
 // 2FA (autenticación en dos pasos)
 router.get('/auth/2fa', auth, twoFactorCtrl.estado);
 router.post('/auth/2fa/setup', auth, twoFactorCtrl.setup);

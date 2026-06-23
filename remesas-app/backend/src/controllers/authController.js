@@ -8,6 +8,7 @@ const notif = require('../services/notificationService');
 const totp = require('../utils/totp');
 const backupCodes = require('../services/backupCodesService');
 const mailer = require('../services/emailService');
+const tokens = require('../services/tokenService');
 
 function signToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -20,6 +21,7 @@ function publicUser(u) {
     fecha_nacimiento: u.fecha_nacimiento, direccion: u.direccion, ciudad: u.ciudad,
     is_admin: u.is_admin === 1,
     totp_enabled: u.totp_enabled === 1,
+    email_verificado: u.email_verificado === 1,
   };
 }
 
@@ -48,6 +50,8 @@ async function register(req, res) {
   });
 
   mailer.enviarPlantilla(id, 'bienvenida');
+  const tokenVerif = tokens.crear(id, 'verificar_email', 24 * 60);
+  mailer.enviarPlantilla(id, 'verificar_email', tokenVerif);
 
   const user = db.prepare('SELECT * FROM users WHERE id=?').get(id);
   res.status(201).json({ token: signToken(id), user: publicUser(user) });
@@ -134,4 +138,55 @@ function stats(req, res) {
   res.json({ ...agg, limites: getResumen(user) });
 }
 
-module.exports = { register, login, me, actualizarPerfil, cambiarPassword, stats, publicUser };
+// ── Verificación de email ──────────────────────────────────────────────────
+function verificarEmail(req, res) {
+  const token = req.body.token || req.query.token;
+  const userId = tokens.consumir('verificar_email', token);
+  if (!userId) return res.status(400).json({ error: 'El enlace de verificación no es válido o ha expirado.' });
+
+  db.prepare('UPDATE users SET email_verificado=1 WHERE id=?').run(userId);
+  res.json({ ok: true, mensaje: 'Tu correo fue verificado correctamente.' });
+}
+
+function reenviarVerificacion(req, res) {
+  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (user.email_verificado) return res.status(400).json({ error: 'Tu correo ya está verificado' });
+
+  const tokenVerif = tokens.crear(user.id, 'verificar_email', 24 * 60);
+  mailer.enviarPlantilla(user.id, 'verificar_email', tokenVerif);
+  res.json({ ok: true, mensaje: 'Te enviamos un nuevo correo de verificación.' });
+}
+
+// ── Recuperación de contraseña ─────────────────────────────────────────────
+// Siempre responde 200 para no revelar si un email está registrado.
+function solicitarRecuperacion(req, res) {
+  const { email } = req.body;
+  if (email) {
+    const user = db.prepare('SELECT id FROM users WHERE email=?').get(String(email).toLowerCase());
+    if (user) {
+      const token = tokens.crear(user.id, 'recuperar_password', 60);
+      mailer.enviarPlantilla(user.id, 'recuperar_password', token);
+    }
+  }
+  res.json({ ok: true, mensaje: 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.' });
+}
+
+async function restablecerPassword(req, res) {
+  const { token, password } = req.body;
+  if (!password || String(password).length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+
+  const userId = tokens.consumir('recuperar_password', token);
+  if (!userId) return res.status(400).json({ error: 'El enlace para restablecer la contraseña no es válido o ha expirado.' });
+
+  const hash = await bcrypt.hash(password, 12);
+  db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, userId);
+  notif.crear(userId, {
+    tipo: 'info',
+    titulo: 'Contraseña actualizada',
+    mensaje: 'Tu contraseña se restableció correctamente. Si no fuiste tú, contáctanos de inmediato.',
+  });
+  res.json({ ok: true, mensaje: 'Tu contraseña fue actualizada. Ya puedes iniciar sesión.' });
+}
+
+module.exports = { register, login, me, actualizarPerfil, cambiarPassword, stats, publicUser, verificarEmail, reenviarVerificacion, solicitarRecuperacion, restablecerPassword };

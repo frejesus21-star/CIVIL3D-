@@ -66,7 +66,10 @@ export default function Login() {
               {loading ? 'Ingresando...' : (requiere2fa ? 'Verificar' : 'Ingresar')}
             </button>
           </form>
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
+          <p className="text-center text-sm mt-4">
+            <Link to="/recuperar" className="text-gray-500 dark:text-gray-400 hover:text-brand-600 hover:underline">¿Olvidaste tu contraseña?</Link>
+          </p>
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
             ¿No tienes cuenta?{' '}
             <Link to="/register" className="text-brand-600 font-medium hover:underline">Regístrate</Link>
           </p>

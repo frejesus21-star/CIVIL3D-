@@ -77,6 +77,24 @@ const plantillas = {
       cta: { texto: 'Ver comprobante', url: `${APP_URL}/historial/${t.id}` },
     }),
   }),
+  verificar_email: (nombre, token) => ({
+    subject: 'Confirma tu correo · RemesasVE',
+    html: plantilla({
+      titulo: 'Confirma tu dirección de correo',
+      saludo: `Hola ${nombre},`,
+      cuerpo: 'Para activar todas las funciones de tu cuenta, confirma que este correo te pertenece. El enlace vence en 24 horas.',
+      cta: { texto: 'Confirmar mi correo', url: `${APP_URL}/verificar-email?token=${token}` },
+    }),
+  }),
+  recuperar_password: (nombre, token) => ({
+    subject: 'Restablece tu contraseña · RemesasVE',
+    html: plantilla({
+      titulo: 'Restablecer contraseña',
+      saludo: `Hola ${nombre},`,
+      cuerpo: 'Recibimos una solicitud para restablecer tu contraseña. Si fuiste tú, usa el siguiente botón. El enlace vence en 1 hora. Si no fuiste tú, ignora este correo: tu contraseña no cambiará.',
+      cta: { texto: 'Crear nueva contraseña', url: `${APP_URL}/restablecer?token=${token}` },
+    }),
+  }),
   kyc_aprobado: (nombre) => ({
     subject: 'Verificación aprobada ✅',
     html: plantilla({

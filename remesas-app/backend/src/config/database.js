@@ -120,8 +120,19 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS tokens (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tipo TEXT NOT NULL,
+    token_hash TEXT NOT NULL,
+    expira DATETIME NOT NULL,
+    usado INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE INDEX IF NOT EXISTS idx_admin_log ON admin_log(created_at);
   CREATE INDEX IF NOT EXISTS idx_backup_user ON backup_codes(user_id, usado);
+  CREATE INDEX IF NOT EXISTS idx_tokens ON tokens(tipo, token_hash);
 
   CREATE INDEX IF NOT EXISTS idx_trans_user ON transferencias(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_notif_user ON notificaciones(user_id, leida);
@@ -149,6 +160,7 @@ ensureColumn('transferencias', 'notas_admin', 'notas_admin TEXT');
 ensureColumn('tasas_cache', 'manual', 'manual INTEGER NOT NULL DEFAULT 0');
 ensureColumn('users', 'totp_secret', 'totp_secret TEXT');
 ensureColumn('users', 'totp_enabled', 'totp_enabled INTEGER NOT NULL DEFAULT 0');
+ensureColumn('users', 'email_verificado', 'email_verificado INTEGER NOT NULL DEFAULT 0');
 
 // Valores por defecto de configuración
 db.prepare(`

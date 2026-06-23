@@ -17,6 +17,20 @@ export default function Perfil() {
   const [msgPwd, setMsgPwd] = useState(null);
   const [loadingPerfil, setLoadingPerfil] = useState(false);
   const [loadingPwd, setLoadingPwd] = useState(false);
+  const [loadingVerif, setLoadingVerif] = useState(false);
+  const [verifEnviado, setVerifEnviado] = useState(false);
+
+  async function reenviarVerif() {
+    setLoadingVerif(true);
+    try {
+      await api.reenviarVerificacion();
+      setVerifEnviado(true);
+    } catch {
+      /* silencioso */
+    } finally {
+      setLoadingVerif(false);
+    }
+  }
 
   async function guardarPerfil(e) {
     e.preventDefault();
@@ -64,10 +78,27 @@ export default function Perfil() {
 
       {/* Datos no editables */}
       <div className="card space-y-2">
-        <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Email</span><span className="font-medium">{user?.email}</span></div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500 dark:text-gray-400">Email</span>
+          <span className="font-medium flex items-center gap-1.5">
+            {user?.email}
+            {user?.email_verificado
+              ? <span className="text-green-600" title="Correo verificado">✅</span>
+              : <span className="text-amber-500" title="Correo sin verificar">⚠️</span>}
+          </span>
+        </div>
+        {!user?.email_verificado && (
+          <div className="flex items-center justify-between gap-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+            <span className="text-xs text-amber-700 dark:text-amber-300">Tu correo no está verificado.</span>
+            <button onClick={reenviarVerif} disabled={loadingVerif}
+              className="text-xs font-medium text-amber-700 dark:text-amber-300 hover:underline whitespace-nowrap">
+              {loadingVerif ? 'Enviando...' : (verifEnviado ? '✓ Enviado' : 'Reenviar')}
+            </button>
+          </div>
+        )}
         <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">RUT</span><span className="font-medium">{user?.rut ? formatRut(user.rut) : '-'}</span></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Verificación</span>
+          <span className="text-gray-500 dark:text-gray-400">Verificación KYC</span>
           <span className={`font-medium ${user?.kyc_estado === 'verificado' ? 'text-green-600' : 'text-gray-600 dark:text-gray-300'}`}>
             {user?.kyc_estado === 'verificado' ? '✅ Verificado' : 'Pendiente'}
           </span>

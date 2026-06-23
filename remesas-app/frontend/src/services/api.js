@@ -57,6 +57,10 @@ export const api = {
   actualizarPerfil: (body) => request('/auth/perfil', { method: 'PATCH', body: JSON.stringify(body) }),
   cambiarPassword: (body) => request('/auth/cambiar-password', { method: 'POST', body: JSON.stringify(body) }),
   stats: () => request('/auth/stats'),
+  verificarEmail: (token) => request('/auth/verificar-email', { method: 'POST', body: JSON.stringify({ token }) }),
+  reenviarVerificacion: () => request('/auth/reenviar-verificacion', { method: 'POST' }),
+  recuperarPassword: (email) => request('/auth/recuperar', { method: 'POST', body: JSON.stringify({ email }) }),
+  restablecerPassword: (token, password) => request('/auth/restablecer', { method: 'POST', body: JSON.stringify({ token, password }) }),
 
   // 2FA
   estado2FA: () => request('/auth/2fa'),
