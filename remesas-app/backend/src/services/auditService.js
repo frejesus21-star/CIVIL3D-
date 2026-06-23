@@ -22,12 +22,19 @@ function registrar(req, { accion, entidad = null, entidad_id = null, detalle = n
   }
 }
 
-function listar({ page = 1, limit = 30 } = {}) {
+function listar({ page = 1, limit = 30, accion = null, desde = null, hasta = null } = {}) {
   const offset = (page - 1) * limit;
-  const total = db.prepare('SELECT COUNT(*) as n FROM admin_log').get().n;
+  const cond = [];
+  const params = [];
+  if (accion) { cond.push('accion = ?'); params.push(accion); }
+  if (desde) { cond.push('DATE(created_at) >= DATE(?)'); params.push(desde); }
+  if (hasta) { cond.push('DATE(created_at) <= DATE(?)'); params.push(hasta); }
+  const where = cond.length ? `WHERE ${cond.join(' AND ')}` : '';
+
+  const total = db.prepare(`SELECT COUNT(*) as n FROM admin_log ${where}`).get(...params).n;
   const rows = db.prepare(
-    'SELECT * FROM admin_log ORDER BY created_at DESC LIMIT ? OFFSET ?'
-  ).all(limit, offset);
+    `SELECT * FROM admin_log ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`
+  ).all(...params, limit, offset);
   return { rows, total, pages: Math.ceil(total / limit), page };
 }
 

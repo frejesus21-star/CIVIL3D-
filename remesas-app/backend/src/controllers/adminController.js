@@ -82,15 +82,26 @@ function rechazarKYC(req, res) {
   res.json({ ok: true });
 }
 
+// Construye condiciones de filtro (estado + rango de fechas) de forma segura.
+// `desde`/`hasta` se esperan como YYYY-MM-DD; `hasta` es inclusivo.
+function filtrosTransferencias(q) {
+  const cond = [];
+  const params = [];
+  if (q.estado) { cond.push('t.estado = ?'); params.push(q.estado); }
+  if (q.desde) { cond.push('DATE(t.created_at) >= DATE(?)'); params.push(q.desde); }
+  if (q.hasta) { cond.push('DATE(t.created_at) <= DATE(?)'); params.push(q.hasta); }
+  const where = cond.length ? `WHERE ${cond.join(' AND ')}` : '';
+  return { where, params };
+}
+
 // ── Transferencias (vista admin) ───────────────────────────────────────────
 function listarTransferencias(req, res) {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = 25;
   const offset = (page - 1) * limit;
-  const estado = req.query.estado || null;
 
-  const where = estado ? `WHERE t.estado = '${estado.replace(/'/g, "''")}'` : '';
-  const total = db.prepare(`SELECT COUNT(*) as n FROM transferencias t ${where}`).get().n;
+  const { where, params } = filtrosTransferencias(req.query);
+  const total = db.prepare(`SELECT COUNT(*) as n FROM transferencias t ${where}`).get(...params).n;
   const rows = db.prepare(`
     SELECT t.id, t.referencia, t.monto_clp, t.monto_ves, t.monto_usd,
            t.comision_clp, t.tasa_usd_clp, t.tasa_usd_ves,
@@ -105,7 +116,7 @@ function listarTransferencias(req, res) {
     JOIN cuentas_origen c ON c.id = t.cuenta_origen_id
     ${where}
     ORDER BY t.created_at DESC LIMIT ? OFFSET ?
-  `).all(limit, offset);
+  `).all(...params, limit, offset);
 
   res.json({ rows, total, pages: Math.ceil(total / limit), page });
 }
@@ -224,7 +235,12 @@ function setConfigAdmin(req, res) {
 // ── Registro de auditoría ──────────────────────────────────────────────────
 function listarLog(req, res) {
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  res.json(audit.listar({ page }));
+  res.json(audit.listar({
+    page,
+    accion: req.query.accion || null,
+    desde: req.query.desde || null,
+    hasta: req.query.hasta || null,
+  }));
 }
 
 // ── Exportación a CSV ──────────────────────────────────────────────────────
@@ -258,8 +274,7 @@ function exportarUsuarios(req, res) {
 }
 
 function exportarTransferencias(req, res) {
-  const estado = req.query.estado || null;
-  const where = estado ? `WHERE t.estado = '${estado.replace(/'/g, "''")}'` : '';
+  const { where, params } = filtrosTransferencias(req.query);
   const rows = db.prepare(`
     SELECT t.referencia, u.nombre as usuario, u.rut, t.monto_clp, t.comision_clp, t.monto_usd, t.monto_ves,
            t.tasa_usd_clp, t.tasa_usd_ves, t.estado, d.nombre as destinatario, d.tipo as tipo_destino, t.created_at
@@ -268,12 +283,12 @@ function exportarTransferencias(req, res) {
     JOIN destinatarios d ON d.id = t.destinatario_id
     ${where}
     ORDER BY t.created_at DESC
-  `).all();
+  `).all(...params);
 
   const headers = ['Referencia', 'Usuario', 'RUT', 'Monto CLP', 'Comisión CLP', 'Monto USD', 'Monto VES', 'Tasa USD/CLP', 'Tasa USD/VES', 'Estado', 'Destinatario', 'Tipo destino', 'Fecha'];
   const data = rows.map(t => [t.referencia, t.usuario, t.rut, t.monto_clp, t.comision_clp, t.monto_usd, t.monto_ves, t.tasa_usd_clp, t.tasa_usd_ves, t.estado, t.destinatario, t.tipo_destino, t.created_at]);
 
-  audit.registrar(req, { accion: 'exportar_csv', entidad: 'transferencias', detalle: { total: rows.length, estado } });
+  audit.registrar(req, { accion: 'exportar_csv', entidad: 'transferencias', detalle: { total: rows.length, estado: req.query.estado || null, desde: req.query.desde || null, hasta: req.query.hasta || null } });
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="transferencias_${new Date().toISOString().slice(0,10)}.csv"`);
   res.send(toCSV(headers, data));

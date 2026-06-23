@@ -66,7 +66,7 @@ export default function AdminUsuarios() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Usuarios</h1>
         <div className="flex items-center gap-3">
-          <button onClick={() => api.adminDescargarCSV('usuarios').catch(e => setMsg('Error: ' + e.message))}
+          <button onClick={() => api.adminDescargarCSV('usuarios', {}).catch(e => setMsg('Error: ' + e.message))}
             className="text-sm font-medium text-gray-600 hover:text-brand-600 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-brand-300 transition-colors">
             ⬇ Exportar CSV
           </button>

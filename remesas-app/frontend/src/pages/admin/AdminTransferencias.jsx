@@ -15,6 +15,8 @@ const ESTADO_COLOR = {
 export default function AdminTransferencias() {
   const [data, setData] = useState({ rows: [], total: 0, pages: 1, page: 1 });
   const [filtroEstado, setFiltroEstado] = useState('');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState(null);
   const [notas, setNotas] = useState('');
@@ -23,8 +25,8 @@ export default function AdminTransferencias() {
   const [msg, setMsg] = useState('');
 
   const cargar = useCallback(() => {
-    api.adminTransferencias(page, filtroEstado).then(setData).catch(() => {});
-  }, [page, filtroEstado]);
+    api.adminTransferencias(page, filtroEstado, desde, hasta).then(setData).catch(() => {});
+  }, [page, filtroEstado, desde, hasta]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -59,7 +61,7 @@ export default function AdminTransferencias() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Transferencias</h1>
         <div className="flex items-center gap-3">
-          <button onClick={() => api.adminDescargarCSV('transferencias', filtroEstado).catch(e => setMsg('Error: ' + e.message))}
+          <button onClick={() => api.adminDescargarCSV('transferencias', { estado: filtroEstado, desde, hasta }).catch(e => setMsg('Error: ' + e.message))}
             className="text-sm font-medium text-gray-600 hover:text-brand-600 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-brand-300 transition-colors">
             ⬇ Exportar CSV
           </button>
@@ -69,13 +71,30 @@ export default function AdminTransferencias() {
 
       {msg && <div className="mb-4 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm">{msg}</div>}
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-3">
         {ESTADOS.map(e => (
           <button key={e || 'all'} onClick={() => { setFiltroEstado(e); setPage(1); }}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filtroEstado === e ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
             {e || 'Todas'}
           </button>
         ))}
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">Desde</label>
+          <input type="date" value={desde} onChange={e => { setDesde(e.target.value); setPage(1); }} className="input text-sm" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">Hasta</label>
+          <input type="date" value={hasta} onChange={e => { setHasta(e.target.value); setPage(1); }} className="input text-sm" />
+        </div>
+        {(desde || hasta) && (
+          <button onClick={() => { setDesde(''); setHasta(''); setPage(1); }}
+            className="text-sm text-gray-400 hover:text-red-600 pb-2">
+            Limpiar fechas
+          </button>
+        )}
       </div>
 
       <div className="flex gap-6">

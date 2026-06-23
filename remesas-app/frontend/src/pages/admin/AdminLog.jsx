@@ -15,10 +15,13 @@ const ACCION_LABEL = {
 export default function AdminLog() {
   const [data, setData] = useState({ rows: [], total: 0, pages: 1, page: 1 });
   const [page, setPage] = useState(1);
+  const [accion, setAccion] = useState('');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
 
   useEffect(() => {
-    api.adminLog(page).then(setData).catch(() => {});
-  }, [page]);
+    api.adminLog(page, accion, desde, hasta).then(setData).catch(() => {});
+  }, [page, accion, desde, hasta]);
 
   function fmtDetalle(d) {
     if (!d) return '';
@@ -35,6 +38,32 @@ export default function AdminLog() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Registro de auditoría</h1>
         <span className="text-sm text-gray-500">{data.total} acciones</span>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">Acción</label>
+          <select value={accion} onChange={e => { setAccion(e.target.value); setPage(1); }} className="input text-sm">
+            <option value="">Todas</option>
+            {Object.entries(ACCION_LABEL).map(([k, v]) => (
+              <option key={k} value={k}>{v.txt}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">Desde</label>
+          <input type="date" value={desde} onChange={e => { setDesde(e.target.value); setPage(1); }} className="input text-sm" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">Hasta</label>
+          <input type="date" value={hasta} onChange={e => { setHasta(e.target.value); setPage(1); }} className="input text-sm" />
+        </div>
+        {(accion || desde || hasta) && (
+          <button onClick={() => { setAccion(''); setDesde(''); setHasta(''); setPage(1); }}
+            className="text-sm text-gray-400 hover:text-red-600 pb-2">
+            Limpiar filtros
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">

@@ -4,6 +4,14 @@ function getToken() {
   return localStorage.getItem('token');
 }
 
+// Construye un query string omitiendo valores vacíos
+function qs(params) {
+  return Object.entries(params)
+    .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join('&');
+}
+
 async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   const token = getToken();
@@ -89,14 +97,14 @@ export const api = {
   adminUsuario: (id) => request(`/admin/usuarios/${id}`),
   adminAprobarKYC: (id) => request(`/admin/usuarios/${id}/aprobar-kyc`, { method: 'POST' }),
   adminRechazarKYC: (id, motivo) => request(`/admin/usuarios/${id}/rechazar-kyc`, { method: 'POST', body: JSON.stringify({ motivo }) }),
-  adminTransferencias: (page = 1, estado = '') => request(`/admin/transferencias?page=${page}&estado=${estado}`),
+  adminTransferencias: (page = 1, estado = '', desde = '', hasta = '') => request(`/admin/transferencias?${qs({ page, estado, desde, hasta })}`),
   adminActualizarTransferencia: (id, body) => request(`/admin/transferencias/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   adminTasas: () => request('/admin/tasas'),
   adminSetTasas: (body) => request('/admin/tasas', { method: 'POST', body: JSON.stringify(body) }),
   adminResetTasas: () => request('/admin/tasas/cache', { method: 'DELETE' }),
   configPublica: () => request('/config/publica'),
   adminConfig: () => request('/admin/config'),
-  adminLog: (page = 1) => request(`/admin/log?page=${page}`),
-  adminDescargarCSV: (recurso, estado = '') => descargar(`/admin/export/${recurso}${estado ? `?estado=${estado}` : ''}`, `${recurso}.csv`),
+  adminLog: (page = 1, accion = '', desde = '', hasta = '') => request(`/admin/log?${qs({ page, accion, desde, hasta })}`),
+  adminDescargarCSV: (recurso, filtros = {}) => descargar(`/admin/export/${recurso}?${qs(filtros)}`, `${recurso}.csv`),
   adminSetConfig: (body) => request('/admin/config', { method: 'PATCH', body: JSON.stringify(body) }),
 };
