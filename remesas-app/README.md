@@ -78,9 +78,14 @@ curl -X POST http://localhost:4000/api/admin/seed \
 
 ## Calidad
 
-- Suite de **tests** del backend con el runner nativo de Node (`npm test`, 27 tests):
-  validación de RUT/cédula/teléfono, cálculos de cotización (ida y vuelta),
-  límites por nivel y módulo TOTP (verificado contra los vectores del RFC 6238).
+- Suite de **tests unitarios** del backend con el runner nativo de Node
+  (`npm test`, 27 tests): validación de RUT/cédula/teléfono, cálculos de
+  cotización (ida y vuelta), límites por nivel y módulo TOTP (verificado
+  contra los vectores del RFC 6238).
+- **Prueba de integración end-to-end** (`npm run test:e2e`, 28 checks): levanta
+  el servidor con una base de datos temporal y recorre el flujo completo
+  (registro, KYC, cuentas, destinatarios, transferencia, 2FA con TOTP y
+  códigos de respaldo, panel admin y control de acceso). Limpia todo al final.
 
 ## Cómo correr
 

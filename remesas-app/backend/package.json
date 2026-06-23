@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "node --test"
+    "test": "node --test test/*.test.js",
+    "test:e2e": "bash test/e2e/run.sh"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
