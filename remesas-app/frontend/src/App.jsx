@@ -14,6 +14,10 @@ import Verificacion from './pages/Verificacion';
 import Notificaciones from './pages/Notificaciones';
 import Perfil from './pages/Perfil';
 import Ayuda from './pages/Ayuda';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsuarios from './pages/admin/AdminUsuarios';
+import AdminTransferencias from './pages/admin/AdminTransferencias';
+import AdminTasas from './pages/admin/AdminTasas';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -45,6 +49,10 @@ export default function App() {
         <Route path="/notificaciones" element={<ProtectedRoute><Notificaciones /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         <Route path="/ayuda" element={<ProtectedRoute><Ayuda /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+        <Route path="/admin/transferencias" element={<AdminTransferencias />} />
+        <Route path="/admin/tasas" element={<AdminTasas />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AuthProvider>

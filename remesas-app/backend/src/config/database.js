@@ -115,5 +115,8 @@ ensureColumn('users', 'ciudad', 'ciudad TEXT');
 ensureColumn('users', 'tipo_documento', 'tipo_documento TEXT');
 ensureColumn('users', 'numero_documento', 'numero_documento TEXT');
 ensureColumn('destinatarios', 'favorito', 'favorito INTEGER NOT NULL DEFAULT 0');
+ensureColumn('users', 'is_admin', 'is_admin INTEGER NOT NULL DEFAULT 0');
+ensureColumn('transferencias', 'notas_admin', 'notas_admin TEXT');
+ensureColumn('tasas_cache', 'manual', 'manual INTEGER NOT NULL DEFAULT 0');
 
 module.exports = db;

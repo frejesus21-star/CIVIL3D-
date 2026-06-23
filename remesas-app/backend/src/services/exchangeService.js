@@ -90,4 +90,17 @@ function calcularInverso(monto_ves, rates, comision_pct = 2.5) {
   return calcularTransferencia(Math.round(monto_clp), rates, comision_pct);
 }
 
-module.exports = { getRates, calcularTransferencia, calcularInverso };
+// Permite al admin invalidar el caché manualmente
+let _cacheInvalidated = false;
+function clearCache() { _cacheInvalidated = true; }
+
+const _origGetRates = getRates;
+async function getRatesWithInvalidation() {
+  if (_cacheInvalidated) {
+    _cacheInvalidated = false;
+    db.prepare('DELETE FROM tasas_cache WHERE manual = 0').run();
+  }
+  return _origGetRates();
+}
+
+module.exports = { getRates: getRatesWithInvalidation, calcularTransferencia, calcularInverso, clearCache };

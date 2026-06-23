@@ -15,6 +15,7 @@ function publicUser(u) {
     id: u.id, nombre: u.nombre, email: u.email, telefono: u.telefono, rut: u.rut,
     kyc_estado: u.kyc_estado, kyc_nivel: u.kyc_nivel,
     fecha_nacimiento: u.fecha_nacimiento, direccion: u.direccion, ciudad: u.ciudad,
+    is_admin: u.is_admin === 1,
   };
 }
 

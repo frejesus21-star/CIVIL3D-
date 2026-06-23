@@ -62,4 +62,16 @@ export const api = {
   crearTransferencia: (body) => request('/transferencias', { method: 'POST', body: JSON.stringify(body) }),
   transferencia: (id) => request(`/transferencias/${id}`),
   cancelarTransferencia: (id) => request(`/transferencias/${id}/cancelar`, { method: 'POST' }),
+
+  // Admin
+  adminStats: () => request('/admin/stats'),
+  adminUsuarios: (page = 1, buscar = '') => request(`/admin/usuarios?page=${page}&buscar=${encodeURIComponent(buscar)}`),
+  adminUsuario: (id) => request(`/admin/usuarios/${id}`),
+  adminAprobarKYC: (id) => request(`/admin/usuarios/${id}/aprobar-kyc`, { method: 'POST' }),
+  adminRechazarKYC: (id, motivo) => request(`/admin/usuarios/${id}/rechazar-kyc`, { method: 'POST', body: JSON.stringify({ motivo }) }),
+  adminTransferencias: (page = 1, estado = '') => request(`/admin/transferencias?page=${page}&estado=${estado}`),
+  adminActualizarTransferencia: (id, body) => request(`/admin/transferencias/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  adminTasas: () => request('/admin/tasas'),
+  adminSetTasas: (body) => request('/admin/tasas', { method: 'POST', body: JSON.stringify(body) }),
+  adminResetTasas: () => request('/admin/tasas/cache', { method: 'DELETE' }),
 };

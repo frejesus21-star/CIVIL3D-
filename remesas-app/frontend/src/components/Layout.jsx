@@ -69,6 +69,9 @@ export default function Layout({ children }) {
                 {user?.nombre?.charAt(0).toUpperCase()}
               </span>
             </Link>
+            {user?.is_admin && (
+              <Link to="/admin" className="hidden md:block text-xs font-medium text-amber-600 hover:text-amber-700 px-2 py-1 bg-amber-50 rounded-lg">⚙ Admin</Link>
+            )}
             <button onClick={handleLogout} className="hidden md:block text-sm text-gray-500 hover:text-red-600 transition-colors">Salir</button>
             <button className="md:hidden p-1 text-xl" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
           </div>

@@ -1,11 +1,13 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth');
+const adminAuth = require('../middleware/adminAuth');
 const authCtrl = require('../controllers/authController');
 const cuentasCtrl = require('../controllers/cuentasController');
 const destCtrl = require('../controllers/destinatariosController');
 const transCtrl = require('../controllers/transferenciasController');
 const kycCtrl = require('../controllers/kycController');
 const notifCtrl = require('../controllers/notificacionesController');
+const adminCtrl = require('../controllers/adminController');
 const { getRates } = require('../services/exchangeService');
 
 // Auth
@@ -56,5 +58,27 @@ router.get('/transferencias', auth, transCtrl.listar);
 router.post('/transferencias', auth, transCtrl.crear);
 router.get('/transferencias/:id', auth, transCtrl.obtener);
 router.post('/transferencias/:id/cancelar', auth, transCtrl.cancelar);
+
+// ── ADMIN ──────────────────────────────────────────────────────────────────
+router.get('/admin/stats', adminAuth, adminCtrl.stats);
+router.get('/admin/usuarios', adminAuth, adminCtrl.listarUsuarios);
+router.get('/admin/usuarios/:id', adminAuth, adminCtrl.getUsuario);
+router.post('/admin/usuarios/:id/aprobar-kyc', adminAuth, adminCtrl.aprobarKYC);
+router.post('/admin/usuarios/:id/rechazar-kyc', adminAuth, adminCtrl.rechazarKYC);
+router.get('/admin/transferencias', adminAuth, adminCtrl.listarTransferencias);
+router.patch('/admin/transferencias/:id', adminAuth, adminCtrl.actualizarTransferencia);
+router.get('/admin/tasas', adminAuth, adminCtrl.getTasas);
+router.post('/admin/tasas', adminAuth, adminCtrl.setTasas);
+router.delete('/admin/tasas/cache', adminAuth, adminCtrl.resetTasas);
+
+// Promoción de usuario a admin (solo por consola / primer uso protegido por contraseña de env)
+router.post('/admin/seed', (req, res) => {
+  const secret = process.env.ADMIN_SEED_SECRET;
+  if (!secret || req.body.secret !== secret) return res.status(403).json({ error: 'Forbidden' });
+  const db = require('../config/database');
+  const result = db.prepare('UPDATE users SET is_admin=1 WHERE email=?').run(req.body.email);
+  if (result.changes === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+  res.json({ ok: true, mensaje: `${req.body.email} ahora es administrador` });
+});
 
 module.exports = router;
