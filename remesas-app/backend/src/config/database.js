@@ -101,6 +101,19 @@ db.exec(`
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS admin_log (
+    id TEXT PRIMARY KEY,
+    admin_id TEXT NOT NULL,
+    admin_nombre TEXT,
+    accion TEXT NOT NULL,
+    entidad TEXT,
+    entidad_id TEXT,
+    detalle TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_admin_log ON admin_log(created_at);
+
   CREATE INDEX IF NOT EXISTS idx_trans_user ON transferencias(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_notif_user ON notificaciones(user_id, leida);
   CREATE INDEX IF NOT EXISTS idx_eventos_trans ON transferencia_eventos(transferencia_id);

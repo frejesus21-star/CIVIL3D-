@@ -78,6 +78,9 @@ router.post('/admin/tasas', adminAuth, adminCtrl.setTasas);
 router.delete('/admin/tasas/cache', adminAuth, adminCtrl.resetTasas);
 router.get('/admin/config', adminAuth, adminCtrl.getConfigAdmin);
 router.patch('/admin/config', adminAuth, adminCtrl.setConfigAdmin);
+router.get('/admin/log', adminAuth, adminCtrl.listarLog);
+router.get('/admin/export/usuarios', adminAuth, adminCtrl.exportarUsuarios);
+router.get('/admin/export/transferencias', adminAuth, adminCtrl.exportarTransferencias);
 
 // Promoción de usuario a admin (solo por consola / primer uso protegido por contraseña de env)
 router.post('/admin/seed', (req, res) => {

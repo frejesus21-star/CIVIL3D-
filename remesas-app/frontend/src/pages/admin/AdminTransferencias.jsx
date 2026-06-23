@@ -58,7 +58,13 @@ export default function AdminTransferencias() {
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Transferencias</h1>
-        <span className="text-sm text-gray-500">{data.total} total</span>
+        <div className="flex items-center gap-3">
+          <button onClick={() => api.adminDescargarCSV('transferencias', filtroEstado).catch(e => setMsg('Error: ' + e.message))}
+            className="text-sm font-medium text-gray-600 hover:text-brand-600 border border-gray-200 rounded-lg px-3 py-1.5 hover:border-brand-300 transition-colors">
+            ⬇ Exportar CSV
+          </button>
+          <span className="text-sm text-gray-500">{data.total} total</span>
+        </div>
       </div>
 
       {msg && <div className="mb-4 px-4 py-2 bg-green-50 text-green-700 rounded-lg text-sm">{msg}</div>}

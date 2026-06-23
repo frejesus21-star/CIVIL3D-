@@ -20,6 +20,26 @@ async function request(path, options = {}) {
   return data;
 }
 
+// Descarga un archivo (CSV) autenticado y dispara el guardado en el navegador
+async function descargar(path, filename) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(BASE + path, { headers });
+  if (!res.ok) throw new Error(`Error ${res.status} al descargar`);
+  const blob = await res.blob();
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   // Auth
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
@@ -76,5 +96,7 @@ export const api = {
   adminResetTasas: () => request('/admin/tasas/cache', { method: 'DELETE' }),
   configPublica: () => request('/config/publica'),
   adminConfig: () => request('/admin/config'),
+  adminLog: (page = 1) => request(`/admin/log?page=${page}`),
+  adminDescargarCSV: (recurso, estado = '') => descargar(`/admin/export/${recurso}${estado ? `?estado=${estado}` : ''}`, `${recurso}.csv`),
   adminSetConfig: (body) => request('/admin/config', { method: 'PATCH', body: JSON.stringify(body) }),
 };

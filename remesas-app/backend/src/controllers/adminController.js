@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const { getConfig, setConfig } = require('../config/database');
 const { getRates, clearCache } = require('../services/exchangeService');
+const audit = require('../services/auditService');
 
 // ── Dashboard de estadísticas ──────────────────────────────────────────────
 function stats(req, res) {
@@ -63,6 +64,7 @@ function aprobarKYC(req, res) {
   const { randomUUID } = require('crypto');
   db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje) VALUES (?,?,'exito','KYC aprobado','Tu identidad ha sido verificada. Ahora tienes límites ampliados.')`).run(randomUUID(), req.params.id);
 
+  audit.registrar(req, { accion: 'aprobar_kyc', entidad: 'usuario', entidad_id: req.params.id });
   res.json({ ok: true });
 }
 
@@ -76,6 +78,7 @@ function rechazarKYC(req, res) {
   const { randomUUID } = require('crypto');
   db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje) VALUES (?,?,'error','KYC rechazado',?)`).run(randomUUID(), req.params.id, `Tu verificación fue rechazada: ${motivo}`);
 
+  audit.registrar(req, { accion: 'rechazar_kyc', entidad: 'usuario', entidad_id: req.params.id, detalle: { motivo } });
   res.json({ ok: true });
 }
 
@@ -145,6 +148,10 @@ function actualizarTransferencia(req, res) {
     }
   }
 
+  if (estado && estado !== t.estado) {
+    audit.registrar(req, { accion: 'cambiar_estado_transferencia', entidad: 'transferencia', entidad_id: t.id, detalle: { de: t.estado, a: estado } });
+  }
+
   res.json({ ok: true });
 }
 
@@ -173,6 +180,7 @@ function setTasas(req, res) {
     .run(parseFloat(usd_clp), parseFloat(usd_ves), 'manual_admin');
 
   clearCache();
+  audit.registrar(req, { accion: 'ajustar_tasas', entidad: 'tasas', detalle: { usd_clp: parseFloat(usd_clp), usd_ves: parseFloat(usd_ves) } });
   res.json({ ok: true, usd_clp: parseFloat(usd_clp), usd_ves: parseFloat(usd_ves) });
 }
 
@@ -209,7 +217,66 @@ function setConfigAdmin(req, res) {
     setConfig('mensaje_mantenimiento', String(mensaje_mantenimiento).slice(0, 300));
   }
 
+  audit.registrar(req, { accion: 'actualizar_configuracion', entidad: 'configuracion', detalle: req.body });
   res.json({ ok: true });
 }
 
-module.exports = { stats, listarUsuarios, getUsuario, aprobarKYC, rechazarKYC, listarTransferencias, actualizarTransferencia, getTasas, setTasas, resetTasas, getConfigAdmin, setConfigAdmin };
+// ── Registro de auditoría ──────────────────────────────────────────────────
+function listarLog(req, res) {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  res.json(audit.listar({ page }));
+}
+
+// ── Exportación a CSV ──────────────────────────────────────────────────────
+function csvEscape(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function toCSV(headers, rows) {
+  const lines = [headers.join(',')];
+  for (const r of rows) lines.push(r.map(csvEscape).join(','));
+  return '﻿' + lines.join('\r\n'); // BOM para Excel
+}
+
+function exportarUsuarios(req, res) {
+  const rows = db.prepare(`
+    SELECT nombre, email, rut, telefono, kyc_estado, kyc_nivel, ciudad, created_at,
+           (SELECT COUNT(*) FROM transferencias WHERE user_id=users.id) as num_trans,
+           (SELECT COALESCE(SUM(monto_clp),0) FROM transferencias WHERE user_id=users.id AND estado='completada') as vol_total
+    FROM users WHERE is_admin=0 ORDER BY created_at DESC
+  `).all();
+
+  const headers = ['Nombre', 'Email', 'RUT', 'Teléfono', 'Estado KYC', 'Nivel KYC', 'Ciudad', 'Registro', 'N° transferencias', 'Volumen completado CLP'];
+  const data = rows.map(u => [u.nombre, u.email, u.rut, u.telefono, u.kyc_estado, u.kyc_nivel, u.ciudad, u.created_at, u.num_trans, u.vol_total]);
+
+  audit.registrar(req, { accion: 'exportar_csv', entidad: 'usuarios', detalle: { total: rows.length } });
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="usuarios_${new Date().toISOString().slice(0,10)}.csv"`);
+  res.send(toCSV(headers, data));
+}
+
+function exportarTransferencias(req, res) {
+  const estado = req.query.estado || null;
+  const where = estado ? `WHERE t.estado = '${estado.replace(/'/g, "''")}'` : '';
+  const rows = db.prepare(`
+    SELECT t.referencia, u.nombre as usuario, u.rut, t.monto_clp, t.comision_clp, t.monto_usd, t.monto_ves,
+           t.tasa_usd_clp, t.tasa_usd_ves, t.estado, d.nombre as destinatario, d.tipo as tipo_destino, t.created_at
+    FROM transferencias t
+    JOIN users u ON u.id = t.user_id
+    JOIN destinatarios d ON d.id = t.destinatario_id
+    ${where}
+    ORDER BY t.created_at DESC
+  `).all();
+
+  const headers = ['Referencia', 'Usuario', 'RUT', 'Monto CLP', 'Comisión CLP', 'Monto USD', 'Monto VES', 'Tasa USD/CLP', 'Tasa USD/VES', 'Estado', 'Destinatario', 'Tipo destino', 'Fecha'];
+  const data = rows.map(t => [t.referencia, t.usuario, t.rut, t.monto_clp, t.comision_clp, t.monto_usd, t.monto_ves, t.tasa_usd_clp, t.tasa_usd_ves, t.estado, t.destinatario, t.tipo_destino, t.created_at]);
+
+  audit.registrar(req, { accion: 'exportar_csv', entidad: 'transferencias', detalle: { total: rows.length, estado } });
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="transferencias_${new Date().toISOString().slice(0,10)}.csv"`);
+  res.send(toCSV(headers, data));
+}
+
+module.exports = { stats, listarUsuarios, getUsuario, aprobarKYC, rechazarKYC, listarTransferencias, actualizarTransferencia, getTasas, setTasas, resetTasas, getConfigAdmin, setConfigAdmin, listarLog, exportarUsuarios, exportarTransferencias };

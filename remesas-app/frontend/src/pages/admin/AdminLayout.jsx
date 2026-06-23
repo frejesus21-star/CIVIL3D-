@@ -7,6 +7,7 @@ const NAV = [
   { to: '/admin/usuarios', label: 'Usuarios', icon: '👥' },
   { to: '/admin/transferencias', label: 'Transferencias', icon: '💸' },
   { to: '/admin/tasas', label: 'Tasas', icon: '💱' },
+  { to: '/admin/auditoria', label: 'Auditoría', icon: '📜' },
 ];
 
 export default function AdminLayout({ children }) {
