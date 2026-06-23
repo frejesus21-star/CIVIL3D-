@@ -6,6 +6,7 @@ const { validarRut, limpiarRut, validarEmail } = require('../utils/validators');
 const { getResumen } = require('../services/limitsService');
 const notif = require('../services/notificationService');
 const totp = require('../utils/totp');
+const backupCodes = require('../services/backupCodesService');
 
 function signToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -59,13 +60,25 @@ async function login(req, res) {
   const valid = await bcrypt.compare(password, user.password_hash);
   if (!valid) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
-  // Segundo factor: si está activado, exige un código TOTP válido
+  // Segundo factor: si está activado, exige un código TOTP válido o,
+  // en su defecto, un código de respaldo de un solo uso.
   if (user.totp_enabled) {
     if (!codigo_2fa) {
       return res.status(401).json({ requiere_2fa: true, mensaje: 'Ingresa el código de tu app de autenticación' });
     }
-    if (!totp.verificar(user.totp_secret, codigo_2fa)) {
+    const okTotp = totp.verificar(user.totp_secret, codigo_2fa);
+    const okBackup = !okTotp && backupCodes.consumir(user.id, codigo_2fa);
+    if (!okTotp && !okBackup) {
       return res.status(401).json({ requiere_2fa: true, error: 'Código de verificación incorrecto' });
+    }
+    if (okBackup) {
+      // Avisa al usuario que usó un código de respaldo (y cuántos quedan)
+      const quedan = backupCodes.contarDisponibles(user.id);
+      notif.crear(user.id, {
+        tipo: 'info',
+        titulo: 'Inicio de sesión con código de respaldo',
+        mensaje: `Usaste un código de respaldo de 2FA. Te quedan ${quedan}. Regenera tus códigos si los estás agotando.`,
+      });
     }
   }
 

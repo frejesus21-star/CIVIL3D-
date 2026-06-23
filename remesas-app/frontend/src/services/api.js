@@ -63,6 +63,7 @@ export const api = {
   setup2FA: () => request('/auth/2fa/setup', { method: 'POST' }),
   activar2FA: (codigo) => request('/auth/2fa/activar', { method: 'POST', body: JSON.stringify({ codigo }) }),
   desactivar2FA: (password) => request('/auth/2fa/desactivar', { method: 'POST', body: JSON.stringify({ password }) }),
+  regenerarCodigos2FA: (password) => request('/auth/2fa/regenerar-codigos', { method: 'POST', body: JSON.stringify({ password }) }),
 
   // KYC
   kyc: () => request('/kyc'),

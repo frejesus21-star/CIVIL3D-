@@ -112,7 +112,16 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  CREATE TABLE IF NOT EXISTS backup_codes (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    usado INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE INDEX IF NOT EXISTS idx_admin_log ON admin_log(created_at);
+  CREATE INDEX IF NOT EXISTS idx_backup_user ON backup_codes(user_id, usado);
 
   CREATE INDEX IF NOT EXISTS idx_trans_user ON transferencias(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_notif_user ON notificaciones(user_id, leida);

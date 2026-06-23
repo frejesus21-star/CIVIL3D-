@@ -24,6 +24,7 @@ router.get('/auth/2fa', auth, twoFactorCtrl.estado);
 router.post('/auth/2fa/setup', auth, twoFactorCtrl.setup);
 router.post('/auth/2fa/activar', auth, twoFactorCtrl.activar);
 router.post('/auth/2fa/desactivar', auth, twoFactorCtrl.desactivar);
+router.post('/auth/2fa/regenerar-codigos', auth, twoFactorCtrl.regenerarCodigos);
 
 // KYC / Verificación
 router.get('/kyc', auth, kycCtrl.estado);
