@@ -15,7 +15,8 @@ Aplicación full-stack para enviar dinero desde **Chile (CLP)** a **Venezuela (V
 - JWT con expiración de 7 días, contraseñas con bcrypt
 - Edición de perfil y cambio de contraseña
 - **Autenticación en dos pasos (2FA)** opcional con TOTP, compatible con
-  Google Authenticator / Authy (implementación propia según RFC 6238)
+  Google Authenticator / Authy (implementación propia según RFC 6238),
+  con **código QR escaneable** y **códigos de respaldo de un solo uso**
 - Rate limiting y cabeceras de seguridad básicas
 
 ### Verificación de identidad (KYC)
@@ -149,5 +150,4 @@ remesas-app/
 - Integración con procesador de pagos real (lado Chile) y red de pago en Venezuela
 - KYC real con verificación documental automatizada
 - Notificaciones por email/SMS/push
-- Códigos QR escaneables para el alta de 2FA (hoy se ingresa la clave manualmente)
-- Códigos de respaldo de un solo uso para recuperación de 2FA
+- Verificación KYC con documentos reales (OCR / proveedor externo)
