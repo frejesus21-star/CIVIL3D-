@@ -117,29 +117,33 @@ ADMIN_SEED_SECRET=secreto_admin # protege el endpoint que asigna rol admin
 
 ## Base de datos
 
-Por defecto la app usa **SQLite** (archivo local con WAL), ideal para desarrollo
-y suficiente para un MVP. Para **producción/escala** está preparada la migración
-a **PostgreSQL**:
+La app funciona indistintamente sobre **SQLite** (por defecto, archivo local con
+WAL, ideal para desarrollo y MVP) o **PostgreSQL** (recomendado para
+producción/escala). El motor se elige por configuración: si defines
+`DATABASE_URL`, usa Postgres; si no, SQLite.
 
 ```bash
 # 1. Levantar PostgreSQL (desde la raíz del proyecto)
 docker compose up -d
 
-# 2. Migrar los datos existentes de SQLite a Postgres
+# 2. (Opcional) Migrar los datos existentes de SQLite a Postgres
 cd backend
 DATABASE_URL=postgres://remesas:remesas@localhost:5432/remesas \
   npm run migrate:postgres
+
+# 3. Arrancar la app sobre Postgres
+DATABASE_URL=postgres://remesas:remesas@localhost:5432/remesas npm start
 ```
 
+- El acceso a datos es **asíncrono** y unificado (`src/config/database.js`), con
+  un traductor de dialecto que adapta la SQL a cada motor.
 - `scripts/pg-schema.sql` — esquema PostgreSQL equivalente al de SQLite.
 - `scripts/migrate-to-postgres.js` — copia todas las tablas respetando las
-  claves foráneas (probado: crea el esquema y migra los datos sin pérdida).
+  claves foráneas (sin pérdida de datos).
 - `docker-compose.yml` — servicio PostgreSQL 16 con volumen persistente.
 
-> Nota: el acceso a datos de la app es síncrono (better-sqlite3). Para operar
-> **en runtime** sobre Postgres queda como paso final volver asíncrono el data
-> layer; el esquema, la infraestructura y la migración de datos ya están listos
-> y validados.
+> La suite e2e se ejecuta sobre ambos motores. Para correrla contra Postgres:
+> `DATABASE_URL=postgres://... npm run test:e2e`.
 
 ## Estructura
 
