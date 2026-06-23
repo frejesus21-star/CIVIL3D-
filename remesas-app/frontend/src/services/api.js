@@ -11,7 +11,12 @@ async function request(path, options = {}) {
 
   const res = await fetch(BASE + path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  if (!res.ok) {
+    const err = new Error(data.error || `Error ${res.status}`);
+    err.codigo = data.codigo;
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
@@ -20,6 +25,19 @@ export const api = {
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   me: () => request('/auth/me'),
+  actualizarPerfil: (body) => request('/auth/perfil', { method: 'PATCH', body: JSON.stringify(body) }),
+  cambiarPassword: (body) => request('/auth/cambiar-password', { method: 'POST', body: JSON.stringify(body) }),
+  stats: () => request('/auth/stats'),
+
+  // KYC
+  kyc: () => request('/kyc'),
+  enviarKyc: (body) => request('/kyc', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Notificaciones
+  notificaciones: () => request('/notificaciones'),
+  contadorNotificaciones: () => request('/notificaciones/contador'),
+  marcarLeida: (id) => request(`/notificaciones/${id}/leida`, { method: 'POST' }),
+  leerTodas: () => request('/notificaciones/leer-todas', { method: 'POST' }),
 
   // Datos de referencia
   tasas: () => request('/tasas'),
@@ -34,11 +52,14 @@ export const api = {
   // Destinatarios
   destinatarios: () => request('/destinatarios'),
   crearDestinatario: (body) => request('/destinatarios', { method: 'POST', body: JSON.stringify(body) }),
+  favoritoDestinatario: (id) => request(`/destinatarios/${id}/favorito`, { method: 'POST' }),
   eliminarDestinatario: (id) => request(`/destinatarios/${id}`, { method: 'DELETE' }),
 
   // Transferencias
   cotizar: (monto_clp) => request(`/transferencias/cotizar?monto_clp=${monto_clp}`),
-  transferencias: (page = 1) => request(`/transferencias?page=${page}`),
+  cotizarInverso: (monto_ves) => request(`/transferencias/cotizar?monto_ves=${monto_ves}`),
+  transferencias: (page = 1, estado) => request(`/transferencias?page=${page}${estado ? `&estado=${estado}` : ''}`),
   crearTransferencia: (body) => request('/transferencias', { method: 'POST', body: JSON.stringify(body) }),
   transferencia: (id) => request(`/transferencias/${id}`),
+  cancelarTransferencia: (id) => request(`/transferencias/${id}/cancelar`, { method: 'POST' }),
 };

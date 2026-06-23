@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
+const rateLimiter = require('./middleware/rateLimiter');
 
 if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = 'dev_secret_change_in_production';
@@ -9,8 +10,22 @@ if (!process.env.JWT_SECRET) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
+
+// Cabeceras de seguridad básicas (sin dependencias)
+app.use((req, res, next) => {
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'DENY');
+  res.set('Referrer-Policy', 'no-referrer');
+  next();
+});
+
+// Rate limiting global y reforzado para login/registro
+app.use('/api', rateLimiter({ windowMs: 60000, max: 120 }));
+app.use('/api/auth/login', rateLimiter({ windowMs: 60000, max: 10 }));
+app.use('/api/auth/register', rateLimiter({ windowMs: 60000, max: 5 }));
 
 app.use('/api', routes);
 

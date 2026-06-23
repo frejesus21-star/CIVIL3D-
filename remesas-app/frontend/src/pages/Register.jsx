@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-function formatRut(value) {
-  const clean = value.replace(/[^0-9kK]/g, '');
-  if (clean.length < 2) return clean;
-  const body = clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return body + '-' + clean.slice(-1).toUpperCase();
-}
+import { formatRut, validarRut } from '../utils/format';
 
 export default function Register() {
   const { register } = useAuth();
@@ -24,6 +18,7 @@ export default function Register() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    if (!validarRut(form.rut)) return setError('El RUT no es válido (revisa el dígito verificador)');
     if (form.password !== form.confirm) return setError('Las contraseñas no coinciden');
     if (form.password.length < 8) return setError('La contraseña debe tener al menos 8 caracteres');
     setLoading(true);
@@ -61,7 +56,8 @@ export default function Register() {
             </div>
             <div>
               <label className="label">RUT chileno</label>
-              <input className="input" placeholder="12.345.678-9" required value={form.rut} onChange={e => setField('rut', e.target.value)} />
+              <input className={`input ${form.rut && !validarRut(form.rut) ? 'border-red-300' : ''}`} placeholder="12.345.678-9" required value={form.rut} onChange={e => setField('rut', e.target.value)} />
+              {form.rut && !validarRut(form.rut) && <p className="text-xs text-red-500 mt-1">RUT inválido (dígito verificador)</p>}
             </div>
             <div>
               <label className="label">Contraseña</label>

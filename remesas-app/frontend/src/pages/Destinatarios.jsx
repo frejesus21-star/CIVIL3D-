@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
+import { validarCedulaVE, validarTelefonoPM } from '../utils/format';
 
 export default function Destinatarios() {
   const [dest, setDest] = useState([]);
@@ -14,13 +15,18 @@ export default function Destinatarios() {
     api.bancosVenezuela().then(setBancos).catch(() => {});
   }, []);
 
+  // Validación en vivo
+  const cedulaValida = !form.cedula || validarCedulaVE(form.cedula);
+  const telefonoValido = !form.telefono || validarTelefonoPM(form.telefono);
+  const cuentaValida = !form.numero_cuenta || /^\d{20}$/.test(form.numero_cuenta.replace(/\s/g, ''));
+
   async function guardar(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
       const nuevo = await api.crearDestinatario(form);
-      setDest(d => [...d, nuevo].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+      setDest(d => [nuevo, ...d].sort((a, b) => (b.favorito - a.favorito) || a.nombre.localeCompare(b.nombre)));
       setShowForm(false);
       setForm({ nombre: '', tipo: 'pago_movil', banco: '', numero_cuenta: '', cedula: '', telefono: '' });
     } catch (err) {
@@ -30,11 +36,20 @@ export default function Destinatarios() {
     }
   }
 
+  async function toggleFav(d) {
+    const actualizado = await api.favoritoDestinatario(d.id).catch(() => null);
+    if (!actualizado) return;
+    setDest(list => list.map(x => x.id === d.id ? { ...x, favorito: actualizado.favorito } : x)
+      .sort((a, b) => (b.favorito - a.favorito) || a.nombre.localeCompare(b.nombre)));
+  }
+
   async function eliminar(id) {
     if (!confirm('¿Eliminar este destinatario?')) return;
     await api.eliminarDestinatario(id).catch(() => {});
     setDest(d => d.filter(x => x.id !== id));
   }
+
+  const Hint = ({ ok, children }) => !ok && <p className="text-xs text-red-500 mt-1">{children}</p>;
 
   return (
     <div className="space-y-5">
@@ -75,20 +90,26 @@ export default function Destinatarios() {
             </div>
             <div>
               <label className="label">Cédula de identidad</label>
-              <input className="input" required placeholder="V-12345678" value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })} />
+              <input className={`input ${!cedulaValida ? 'border-red-300' : ''}`} required placeholder="V12345678"
+                value={form.cedula} onChange={e => setForm({ ...form, cedula: e.target.value })} />
+              <Hint ok={cedulaValida}>Formato: V o E seguido de 6 a 9 dígitos (ej. V12345678)</Hint>
             </div>
             {form.tipo === 'pago_movil' ? (
               <div>
                 <label className="label">Teléfono (para pago móvil)</label>
-                <input className="input" required type="tel" placeholder="0412-1234567" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} />
+                <input className={`input ${!telefonoValido ? 'border-red-300' : ''}`} required type="tel" placeholder="0414-1234567"
+                  value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} />
+                <Hint ok={telefonoValido}>Debe iniciar en 0412/0414/0416/0424/0426 y tener 11 dígitos</Hint>
               </div>
             ) : (
               <div>
-                <label className="label">Número de cuenta</label>
-                <input className="input" required inputMode="numeric" placeholder="0102 0000 00 0000000000" value={form.numero_cuenta} onChange={e => setForm({ ...form, numero_cuenta: e.target.value })} />
+                <label className="label">Número de cuenta (20 dígitos)</label>
+                <input className={`input ${!cuentaValida ? 'border-red-300' : ''}`} required inputMode="numeric" placeholder="01020000000000000000"
+                  value={form.numero_cuenta} onChange={e => setForm({ ...form, numero_cuenta: e.target.value })} />
+                <Hint ok={cuentaValida}>El número de cuenta venezolano tiene 20 dígitos</Hint>
               </div>
             )}
-            <button type="submit" disabled={loading} className="btn-primary w-full">
+            <button type="submit" disabled={loading || !cedulaValida || !telefonoValido || !cuentaValida} className="btn-primary w-full">
               {loading ? 'Guardando...' : 'Guardar destinatario'}
             </button>
           </form>
@@ -107,13 +128,16 @@ export default function Destinatarios() {
               <div className="w-10 h-10 rounded-full bg-ves-100 flex items-center justify-center text-ves-600 font-bold text-sm flex-shrink-0">
                 {d.nombre.charAt(0).toUpperCase()}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">{d.nombre}</p>
                 <p className="text-xs text-gray-500">{d.tipo === 'pago_movil' ? '📱 Pago Móvil' : '🏦 Banco'} · {d.banco}</p>
                 {d.telefono && <p className="text-xs text-gray-400">{d.telefono}</p>}
                 {d.numero_cuenta && <p className="text-xs text-gray-400 font-mono">···{d.numero_cuenta.slice(-6)}</p>}
                 <p className="text-xs text-gray-400">CI: {d.cedula}</p>
               </div>
+              <button onClick={() => toggleFav(d)} className={`p-1 text-lg ${d.favorito ? 'text-amber-400' : 'text-gray-300 hover:text-amber-400'}`} title="Favorito">
+                {d.favorito ? '★' : '☆'}
+              </button>
               <button onClick={() => eliminar(d.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1">✕</button>
             </div>
           ))}

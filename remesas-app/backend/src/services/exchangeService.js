@@ -3,6 +3,12 @@ const db = require('../config/database');
 
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 min
 
+// Tasas de respaldo configurables por entorno. Sirven cuando las APIs externas
+// no están disponibles, para que el servicio nunca quede completamente caído.
+// IMPORTANTE: un admin debe mantenerlas actualizadas (especialmente VES por la inflación).
+const FALLBACK_USD_CLP = parseFloat(process.env.FALLBACK_USD_CLP || '950');
+const FALLBACK_USD_VES = parseFloat(process.env.FALLBACK_USD_VES || '45');
+
 async function fetchParaleloDolar() {
   // Monitor Dólar Venezuela API (paralelo)
   const res = await fetch('https://ve.dolarapi.com/v1/dolares/paralelo', {
@@ -43,11 +49,18 @@ async function getRates() {
 
     return { usd_clp, usd_ves, fuente: 'dolarapi+openexchange', cached: false };
   } catch (err) {
-    // Fallback al caché aunque esté vencido
+    // 1º fallback: caché aunque esté vencido
     if (cached) {
       return { usd_clp: cached.usd_clp, usd_ves: cached.usd_ves, fuente: cached.fuente + ' (caché vencido)', cached: true };
     }
-    throw new Error('No se pudo obtener la tasa de cambio: ' + err.message);
+    // 2º fallback: tasa de respaldo configurada, para no dejar el servicio caído
+    return {
+      usd_clp: FALLBACK_USD_CLP,
+      usd_ves: FALLBACK_USD_VES,
+      fuente: 'tasa de respaldo (APIs no disponibles)',
+      cached: false,
+      respaldo: true,
+    };
   }
 }
 
@@ -68,4 +81,13 @@ function calcularTransferencia(monto_clp, rates, comision_pct = 2.5) {
   };
 }
 
-module.exports = { getRates, calcularTransferencia };
+// Cotización inversa: dado cuánto debe LLEGAR en Bs., calcula cuánto pagar en CLP
+function calcularInverso(monto_ves, rates, comision_pct = 2.5) {
+  const monto_usd = monto_ves / rates.usd_ves;
+  const monto_neto_clp = monto_usd * rates.usd_clp;
+  // monto_neto = monto_clp * (1 - comision_pct/100)  =>  monto_clp = monto_neto / (1 - c)
+  const monto_clp = monto_neto_clp / (1 - comision_pct / 100);
+  return calcularTransferencia(Math.round(monto_clp), rates, comision_pct);
+}
+
+module.exports = { getRates, calcularTransferencia, calcularInverso };

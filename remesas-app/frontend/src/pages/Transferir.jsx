@@ -1,37 +1,40 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
-
-function fmt(n) { return new Intl.NumberFormat('es-CL').format(Math.round(n)); }
-function fmtVes(n) { return new Intl.NumberFormat('es-VE', { minimumFractionDigits: 0 }).format(Math.round(n)); }
+import { fmtCLP, fmtVES } from '../utils/format';
 
 const PASOS = ['Monto', 'Origen', 'Destino', 'Confirmar'];
 
 export default function Transferir() {
   const navigate = useNavigate();
   const [paso, setPaso] = useState(0);
-  const [monto, setMonto] = useState('');
+  const [modo, setModo] = useState('envio'); // 'envio' = ingresa CLP | 'recibo' = ingresa VES
+  const [valor, setValor] = useState('');
   const [cotizacion, setCotizacion] = useState(null);
   const [loadingCot, setLoadingCot] = useState(false);
   const [cuentas, setCuentas] = useState([]);
   const [destinatarios, setDestinatarios] = useState([]);
+  const [limites, setLimites] = useState(null);
   const [cuentaId, setCuentaId] = useState('');
   const [destId, setDestId] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
+  const [errorLimite, setErrorLimite] = useState(false);
   const [exito, setExito] = useState(null);
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     api.cuentas().then(setCuentas).catch(() => {});
     api.destinatarios().then(setDestinatarios).catch(() => {});
+    api.stats().then(s => setLimites(s.limites)).catch(() => {});
   }, []);
 
-  const cotizar = useCallback(async (val) => {
-    const num = Number(String(val).replace(/\./g, '').replace(',', ''));
-    if (!num || num < 1000) { setCotizacion(null); return; }
+  const cotizar = useCallback(async (val, modoActual) => {
+    const num = Number(String(val).replace(/\./g, ''));
+    if (!num || num <= 0) { setCotizacion(null); return; }
     setLoadingCot(true);
     try {
-      const c = await api.cotizar(num);
+      const c = modoActual === 'recibo' ? await api.cotizarInverso(num) : await api.cotizar(num);
       setCotizacion(c);
     } catch {
       setCotizacion(null);
@@ -40,23 +43,36 @@ export default function Transferir() {
     }
   }, []);
 
-  function handleMonto(e) {
+  function handleValor(e) {
     const raw = e.target.value.replace(/\./g, '');
     if (!/^\d*$/.test(raw)) return;
     const num = Number(raw);
-    setMonto(fmt(num) === '0' ? '' : fmt(num));
-    cotizar(num);
+    setValor(num === 0 ? '' : fmtCLP(num));
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => cotizar(num, modo), 400);
+  }
+
+  function cambiarModo(nuevoModo) {
+    if (nuevoModo === modo) return;
+    setModo(nuevoModo);
+    setValor('');
+    setCotizacion(null);
   }
 
   async function confirmar() {
     setError('');
+    setErrorLimite(false);
     setEnviando(true);
-    const montoNum = Number(monto.replace(/\./g, ''));
     try {
-      const t = await api.crearTransferencia({ cuenta_origen_id: cuentaId, destinatario_id: destId, monto_clp: montoNum });
+      const t = await api.crearTransferencia({
+        cuenta_origen_id: cuentaId,
+        destinatario_id: destId,
+        monto_clp: cotizacion.monto_clp,
+      });
       setExito(t);
     } catch (err) {
       setError(err.message);
+      if (err.codigo === 'LIMITE_EXCEDIDO') setErrorLimite(true);
     } finally {
       setEnviando(false);
     }
@@ -76,34 +92,29 @@ export default function Transferir() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Enviaste</span>
-              <span className="font-semibold">${fmt(exito.monto_clp)} CLP</span>
+              <span className="font-semibold">${fmtCLP(exito.monto_clp)} CLP</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">El destinatario recibe</span>
-              <span className="font-semibold text-brand-600">{fmtVes(exito.monto_ves)} Bs.</span>
+              <span className="font-semibold text-brand-600">{fmtVES(exito.monto_ves)} Bs.</span>
             </div>
           </div>
           <div className="flex gap-3">
-            <button className="btn-secondary flex-1" onClick={() => navigate('/historial')}>Ver historial</button>
-            <button className="btn-primary flex-1" onClick={() => { setExito(null); setPaso(0); setMonto(''); setCotizacion(null); }}>Nueva transferencia</button>
+            <button className="btn-secondary flex-1" onClick={() => navigate(`/historial/${exito.id}`)}>Ver detalle</button>
+            <button className="btn-primary flex-1" onClick={() => { setExito(null); setPaso(0); setValor(''); setCotizacion(null); }}>Nueva</button>
           </div>
         </div>
       </div>
     );
   }
 
-  const montoNum = Number(monto.replace(/\./g, ''));
-
   return (
     <div className="max-w-md mx-auto space-y-5">
       <h1 className="text-2xl font-bold">Enviar dinero</h1>
 
-      {/* Stepper */}
       <div className="flex items-center gap-1">
         {PASOS.map((p, i) => (
-          <React.Fragment key={p}>
-            <div className={`flex-1 h-1.5 rounded-full ${i <= paso ? 'bg-brand-500' : 'bg-gray-200'}`} />
-          </React.Fragment>
+          <div key={p} className={`flex-1 h-1.5 rounded-full ${i <= paso ? 'bg-brand-500' : 'bg-gray-200'}`} />
         ))}
       </div>
       <p className="text-sm text-gray-500 font-medium">Paso {paso + 1} de {PASOS.length}: <span className="text-gray-900">{PASOS[paso]}</span></p>
@@ -111,31 +122,54 @@ export default function Transferir() {
       {/* Paso 0: Monto */}
       {paso === 0 && (
         <div className="card space-y-5">
+          {/* Toggle modo */}
+          <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
+            <button onClick={() => cambiarModo('envio')}
+              className={`py-2 rounded-lg text-sm font-medium transition-colors ${modo === 'envio' ? 'bg-white shadow text-brand-700' : 'text-gray-500'}`}>
+              Quiero enviar
+            </button>
+            <button onClick={() => cambiarModo('recibo')}
+              className={`py-2 rounded-lg text-sm font-medium transition-colors ${modo === 'recibo' ? 'bg-white shadow text-brand-700' : 'text-gray-500'}`}>
+              Quiero que reciban
+            </button>
+          </div>
+
           <div>
-            <label className="label">¿Cuánto quieres enviar?</label>
+            <label className="label">{modo === 'envio' ? '¿Cuánto quieres enviar?' : '¿Cuánto quieres que reciban?'}</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">$</span>
-              <input className="input pl-7 text-xl font-semibold" placeholder="50.000"
-                value={monto} onChange={handleMonto} inputMode="numeric" />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">CLP</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">{modo === 'envio' ? '$' : 'Bs.'}</span>
+              <input className={`input ${modo === 'envio' ? 'pl-7' : 'pl-12'} text-xl font-semibold`} placeholder={modo === 'envio' ? '50.000' : '5.000'}
+                value={valor} onChange={handleValor} inputMode="numeric" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{modo === 'envio' ? 'CLP' : 'VES'}</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Mínimo $1.000 — Máximo $5.000.000 CLP</p>
+            {limites && (
+              <p className="text-xs text-gray-400 mt-1">
+                Disponible hoy: ${fmtCLP(limites.disponible_hoy)} CLP · Nivel {limites.nivel_nombre}
+              </p>
+            )}
           </div>
 
           {loadingCot && <div className="text-sm text-gray-400">Calculando...</div>}
           {cotizacion && (
             <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 space-y-2">
               <p className="text-sm font-semibold text-brand-700 mb-2">Resumen</p>
-              <div className="flex justify-between text-sm"><span className="text-gray-600">Monto enviado</span><span>${fmt(cotizacion.monto_clp)} CLP</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-600">Comisión ({cotizacion.comision_pct}%)</span><span>-${fmt(cotizacion.comision_clp)} CLP</span></div>
-              <div className="border-t border-brand-200 pt-2 flex justify-between text-sm"><span className="text-gray-600">Neto</span><span>${fmt(cotizacion.monto_neto_clp)} CLP</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600">Monto enviado</span><span>${fmtCLP(cotizacion.monto_clp)} CLP</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600">Comisión ({cotizacion.comision_pct}%)</span><span>-${fmtCLP(cotizacion.comision_clp)} CLP</span></div>
+              <div className="border-t border-brand-200 pt-2 flex justify-between text-sm"><span className="text-gray-600">Neto</span><span>${fmtCLP(cotizacion.monto_neto_clp)} CLP</span></div>
               <div className="flex justify-between text-sm"><span className="text-gray-600">Equivalente USD</span><span>${cotizacion.monto_usd} USD</span></div>
-              <div className="flex justify-between font-bold text-brand-700"><span>Destinatario recibe</span><span>{fmtVes(cotizacion.monto_ves)} Bs.</span></div>
-              <p className="text-xs text-gray-400 pt-1">Tasa: 1 USD = {fmt(cotizacion.tasa_usd_ves)} Bs. (paralelo) · {fmt(cotizacion.tasa_usd_clp)} CLP</p>
+              <div className="flex justify-between font-bold text-brand-700"><span>Destinatario recibe</span><span>{fmtVES(cotizacion.monto_ves)} Bs.</span></div>
+              <p className="text-xs text-gray-400 pt-1">Tasa: 1 USD = {fmtCLP(cotizacion.tasa_usd_ves)} Bs. (paralelo) · {fmtCLP(cotizacion.tasa_usd_clp)} CLP</p>
             </div>
           )}
 
-          <button disabled={!cotizacion || montoNum < 1000} className="btn-primary w-full"
+          {limites && cotizacion && cotizacion.monto_clp > limites.disponible_hoy && (
+            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm">
+              Este monto supera tu disponible de hoy (${fmtCLP(limites.disponible_hoy)} CLP).{' '}
+              {limites.nivel < 2 && <Link to="/verificacion" className="font-medium underline">Verifícate para aumentar tus límites</Link>}
+            </div>
+          )}
+
+          <button disabled={!cotizacion || cotizacion.monto_clp < 1000} className="btn-primary w-full"
             onClick={() => setPaso(1)}>
             Continuar →
           </button>
@@ -149,7 +183,7 @@ export default function Transferir() {
           {cuentas.length === 0 ? (
             <div className="text-center py-6 text-gray-400">
               <p>No tienes cuentas registradas</p>
-              <a href="/cuentas" className="text-brand-600 text-sm font-medium hover:underline">Agregar cuenta →</a>
+              <Link to="/cuentas" className="text-brand-600 text-sm font-medium hover:underline">Agregar cuenta →</Link>
             </div>
           ) : (
             <div className="space-y-2">
@@ -180,7 +214,7 @@ export default function Transferir() {
           {destinatarios.length === 0 ? (
             <div className="text-center py-6 text-gray-400">
               <p>No tienes destinatarios registrados</p>
-              <a href="/destinatarios" className="text-brand-600 text-sm font-medium hover:underline">Agregar destinatario →</a>
+              <Link to="/destinatarios" className="text-brand-600 text-sm font-medium hover:underline">Agregar destinatario →</Link>
             </div>
           ) : (
             <div className="space-y-2">
@@ -191,7 +225,7 @@ export default function Transferir() {
                     {d.nombre.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-sm">{d.nombre}</p>
+                    <p className="font-medium text-sm">{d.nombre} {d.favorito && <span className="text-amber-400">★</span>}</p>
                     <p className="text-xs text-gray-500">{d.tipo === 'pago_movil' ? '📱 Pago Móvil' : '🏦 Banco'} · {d.banco}</p>
                     {d.telefono && <p className="text-xs text-gray-400">{d.telefono}</p>}
                   </div>
@@ -214,22 +248,25 @@ export default function Transferir() {
         return (
           <div className="card space-y-5">
             <p className="font-semibold">Confirma tu transferencia</p>
-            {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">{error}</div>}
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+                {error}
+                {errorLimite && <div className="mt-2"><Link to="/verificacion" className="font-medium underline">Verificar mi identidad →</Link></div>}
+              </div>
+            )}
             <div className="space-y-3">
               <div className="flex justify-between text-sm py-2 border-b border-gray-100">
                 <span className="text-gray-500">Envías</span>
-                <span className="font-semibold text-lg">${fmt(montoNum)} CLP</span>
+                <span className="font-semibold text-lg">${fmtCLP(cotizacion.monto_clp)} CLP</span>
               </div>
-              {cotizacion && <>
-                <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                  <span className="text-gray-500">Comisión</span>
-                  <span>-${fmt(cotizacion.comision_clp)} CLP</span>
-                </div>
-                <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                  <span className="text-gray-500">Destinatario recibe</span>
-                  <span className="font-bold text-brand-600 text-base">{fmtVes(cotizacion.monto_ves)} Bs.</span>
-                </div>
-              </>}
+              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
+                <span className="text-gray-500">Comisión</span>
+                <span>-${fmtCLP(cotizacion.comision_clp)} CLP</span>
+              </div>
+              <div className="flex justify-between text-sm py-2 border-b border-gray-100">
+                <span className="text-gray-500">Destinatario recibe</span>
+                <span className="font-bold text-brand-600 text-base">{fmtVES(cotizacion.monto_ves)} Bs.</span>
+              </div>
               {cuenta && (
                 <div className="flex justify-between text-sm py-2 border-b border-gray-100">
                   <span className="text-gray-500">Desde</span>

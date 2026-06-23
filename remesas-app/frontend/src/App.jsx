@@ -10,6 +10,10 @@ import Historial from './pages/Historial';
 import DetalleTransferencia from './pages/DetalleTransferencia';
 import Cuentas from './pages/Cuentas';
 import Destinatarios from './pages/Destinatarios';
+import Verificacion from './pages/Verificacion';
+import Notificaciones from './pages/Notificaciones';
+import Perfil from './pages/Perfil';
+import Ayuda from './pages/Ayuda';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -37,6 +41,10 @@ export default function App() {
         <Route path="/historial/:id" element={<ProtectedRoute><DetalleTransferencia /></ProtectedRoute>} />
         <Route path="/cuentas" element={<ProtectedRoute><Cuentas /></ProtectedRoute>} />
         <Route path="/destinatarios" element={<ProtectedRoute><Destinatarios /></ProtectedRoute>} />
+        <Route path="/verificacion" element={<ProtectedRoute><Verificacion /></ProtectedRoute>} />
+        <Route path="/notificaciones" element={<ProtectedRoute><Notificaciones /></ProtectedRoute>} />
+        <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+        <Route path="/ayuda" element={<ProtectedRoute><Ayuda /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AuthProvider>
