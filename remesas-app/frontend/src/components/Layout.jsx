@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import InstallPrompt from './InstallPrompt';
 
 const NAV = [
   { to: '/dashboard', label: 'Inicio', icon: '🏠' },
@@ -114,6 +115,7 @@ export default function Layout({ children }) {
         </div>
       </nav>
       <div className="md:hidden h-16" />
+      <InstallPrompt />
     </div>
   );
 }

@@ -41,6 +41,13 @@ Aplicación full-stack para enviar dinero desde **Chile (CLP)** a **Venezuela (V
 - **Dashboard** con estadísticas, uso mensual y límites disponibles
 - Centro de **ayuda / FAQ**
 - Diseño responsive: navegación inferior en móvil, barra superior en escritorio
+- **PWA instalable**: se instala como app nativa en el celular (Android/iOS) con
+  ícono propio, pantalla completa y service worker (app shell offline)
+
+## Calidad
+
+- Suite de **tests** del backend con el runner nativo de Node (`npm test`):
+  validación de RUT/cédula/teléfono, cálculos de cotización (ida y vuelta) y límites por nivel.
 
 ## Cómo correr
 
