@@ -115,6 +115,32 @@ ADMIN_SEED_SECRET=secreto_admin # protege el endpoint que asigna rol admin
 > La comisión ya **no** se configura por variable de entorno: se ajusta en vivo
 > desde el panel admin (Tasas y configuración) y se persiste en la base de datos.
 
+## Base de datos
+
+Por defecto la app usa **SQLite** (archivo local con WAL), ideal para desarrollo
+y suficiente para un MVP. Para **producción/escala** está preparada la migración
+a **PostgreSQL**:
+
+```bash
+# 1. Levantar PostgreSQL (desde la raíz del proyecto)
+docker compose up -d
+
+# 2. Migrar los datos existentes de SQLite a Postgres
+cd backend
+DATABASE_URL=postgres://remesas:remesas@localhost:5432/remesas \
+  npm run migrate:postgres
+```
+
+- `scripts/pg-schema.sql` — esquema PostgreSQL equivalente al de SQLite.
+- `scripts/migrate-to-postgres.js` — copia todas las tablas respetando las
+  claves foráneas (probado: crea el esquema y migra los datos sin pérdida).
+- `docker-compose.yml` — servicio PostgreSQL 16 con volumen persistente.
+
+> Nota: el acceso a datos de la app es síncrono (better-sqlite3). Para operar
+> **en runtime** sobre Postgres queda como paso final volver asíncrono el data
+> layer; el esquema, la infraestructura y la migración de datos ya están listos
+> y validados.
+
 ## Estructura
 
 ```
