@@ -2,6 +2,7 @@ const db = require('../config/database');
 const { getConfig, setConfig } = require('../config/database');
 const { getRates, clearCache } = require('../services/exchangeService');
 const audit = require('../services/auditService');
+const email = require('../services/emailService');
 
 // ── Dashboard de estadísticas ──────────────────────────────────────────────
 function stats(req, res) {
@@ -81,6 +82,7 @@ function aprobarKYC(req, res) {
   const { randomUUID } = require('crypto');
   db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje) VALUES (?,?,'exito','KYC aprobado','Tu identidad ha sido verificada. Ahora tienes límites ampliados.')`).run(randomUUID(), req.params.id);
 
+  email.enviarPlantilla(req.params.id, 'kyc_aprobado');
   audit.registrar(req, { accion: 'aprobar_kyc', entidad: 'usuario', entidad_id: req.params.id });
   res.json({ ok: true });
 }
@@ -95,6 +97,7 @@ function rechazarKYC(req, res) {
   const { randomUUID } = require('crypto');
   db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje) VALUES (?,?,'error','KYC rechazado',?)`).run(randomUUID(), req.params.id, `Tu verificación fue rechazada: ${motivo}`);
 
+  email.enviarPlantilla(req.params.id, 'kyc_rechazado', motivo);
   audit.registrar(req, { accion: 'rechazar_kyc', entidad: 'usuario', entidad_id: req.params.id, detalle: { motivo } });
   res.json({ ok: true });
 }
@@ -173,6 +176,10 @@ function actualizarTransferencia(req, res) {
         mensajes[estado],
         JSON.stringify({ transferencia_id: t.id })
       );
+    }
+    if (estado === 'completada') {
+      const full = db.prepare('SELECT id, referencia, monto_clp, monto_ves FROM transferencias WHERE id=?').get(t.id);
+      email.enviarPlantilla(t.user_id, 'transferencia_completada', full);
     }
   }
 

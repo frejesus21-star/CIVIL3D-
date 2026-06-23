@@ -4,6 +4,7 @@ const { getRates, calcularTransferencia, calcularInverso } = require('../service
 const { validarEnvio } = require('../services/limitsService');
 const notif = require('../services/notificationService');
 const comprobante = require('../services/comprobanteService');
+const email = require('../services/emailService');
 
 function genReferencia() {
   return 'REM' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -105,6 +106,8 @@ function simularCicloVida(id, userId, destNombre, montoVes) {
           mensaje: `${destNombre} recibió ${Math.round(montoVes).toLocaleString('es-VE')} Bs.`,
           meta: { transferencia_id: id },
         });
+        const full = db.prepare('SELECT id, referencia, monto_clp, monto_ves FROM transferencias WHERE id=?').get(id);
+        email.enviarPlantilla(userId, 'transferencia_completada', full);
       }
     } catch (e) { /* noop */ }
   }, 8000);

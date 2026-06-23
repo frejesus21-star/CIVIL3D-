@@ -7,6 +7,7 @@ const { getResumen } = require('../services/limitsService');
 const notif = require('../services/notificationService');
 const totp = require('../utils/totp');
 const backupCodes = require('../services/backupCodesService');
+const mailer = require('../services/emailService');
 
 function signToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -45,6 +46,8 @@ async function register(req, res) {
     titulo: '¡Bienvenido a RemesasVE! 🎉',
     mensaje: 'Tu cuenta está lista. Verifica tu identidad para aumentar tus límites de envío.',
   });
+
+  mailer.enviarPlantilla(id, 'bienvenida');
 
   const user = db.prepare('SELECT * FROM users WHERE id=?').get(id);
   res.status(201).json({ token: signToken(id), user: publicUser(user) });
