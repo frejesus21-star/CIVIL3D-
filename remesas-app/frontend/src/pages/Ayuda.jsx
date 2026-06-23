@@ -44,7 +44,7 @@ function Item({ q, a }) {
         <span className="font-medium text-sm">{q}</span>
         <span className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
-      {open && <p className="text-sm text-gray-600 mt-3 leading-relaxed">{a}</p>}
+      {open && <p className="text-sm text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">{a}</p>}
     </div>
   );
 }
@@ -53,7 +53,7 @@ export default function Ayuda() {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <h1 className="text-2xl font-bold">Centro de ayuda</h1>
-      <p className="text-gray-500 text-sm">Preguntas frecuentes sobre el envío de dinero a Venezuela.</p>
+      <p className="text-gray-500 dark:text-gray-400 text-sm">Preguntas frecuentes sobre el envío de dinero a Venezuela.</p>
 
       <div className="space-y-3">
         {FAQS.map((f, i) => <Item key={i} {...f} />)}
@@ -61,7 +61,7 @@ export default function Ayuda() {
 
       <div className="card bg-brand-50 border-brand-100 text-center space-y-2">
         <p className="font-semibold">¿Necesitas más ayuda?</p>
-        <p className="text-sm text-gray-600">Escríbenos a <a href="mailto:soporte@remesasve.cl" className="text-brand-600 font-medium">soporte@remesasve.cl</a></p>
+        <p className="text-sm text-gray-600 dark:text-gray-300">Escríbenos a <a href="mailto:soporte@remesasve.cl" className="text-brand-600 font-medium">soporte@remesasve.cl</a></p>
         <Link to="/transferir" className="btn-primary inline-flex mt-2">Hacer una transferencia</Link>
       </div>
 

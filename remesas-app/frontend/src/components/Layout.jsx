@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { api } from '../services/api';
 import InstallPrompt from './InstallPrompt';
 
@@ -20,6 +21,7 @@ const MENU_EXTRA = [
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { theme, toggle } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,7 +49,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-30 dark:bg-gray-900 dark:border-gray-800">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2 font-bold text-brand-600 text-lg">
             <span>💸</span> RemesasVE
@@ -55,12 +57,15 @@ export default function Layout({ children }) {
           <div className="hidden md:flex items-center gap-1">
             {NAV.map(n => (
               <Link key={n.to} to={n.to}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === n.to ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-100'}`}>
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${location.pathname === n.to ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-100' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}`}>
                 {n.label}
               </Link>
             ))}
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={toggle} className="p-1 text-xl" aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'} title="Cambiar tema">
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
             <Link to="/notificaciones" className="relative p-1" aria-label="Notificaciones">
               <span className="text-xl">🔔</span>
               {noLeidas > 0 && (
@@ -69,7 +74,7 @@ export default function Layout({ children }) {
                 </span>
               )}
             </Link>
-            <Link to="/perfil" className="hidden md:flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+            <Link to="/perfil" className="hidden md:flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">
               <span className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold">
                 {user?.nombre?.charAt(0).toUpperCase()}
               </span>
@@ -77,15 +82,15 @@ export default function Layout({ children }) {
             {user?.is_admin && (
               <Link to="/admin" className="hidden md:block text-xs font-medium text-amber-600 hover:text-amber-700 px-2 py-1 bg-amber-50 rounded-lg">⚙ Admin</Link>
             )}
-            <button onClick={handleLogout} className="hidden md:block text-sm text-gray-500 hover:text-red-600 transition-colors">Salir</button>
-            <button className="md:hidden p-1 text-xl" onClick={() => setMenuOpen(!menuOpen)}>☰</button>
+            <button onClick={handleLogout} className="hidden md:block text-sm text-gray-500 dark:text-gray-400 hover:text-red-600 transition-colors">Salir</button>
+            <button className="md:hidden p-1 text-xl" onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menú" aria-expanded={menuOpen}>☰</button>
           </div>
         </div>
         {menuOpen && (
-          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-2 flex flex-col gap-1">
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-2 flex flex-col gap-1 dark:bg-gray-900 dark:border-gray-800">
             {[...NAV, ...MENU_EXTRA].map(n => (
               <Link key={n.to} to={n.to} onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${location.pathname === n.to ? 'bg-brand-50 text-brand-700' : 'text-gray-600'}`}>
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${location.pathname === n.to ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-100' : 'text-gray-600 dark:text-gray-300'}`}>
                 <span>{n.icon}</span>{n.label}
               </Link>
             ))}
@@ -95,11 +100,11 @@ export default function Layout({ children }) {
           </div>
         )}
         {/* Sub-nav desktop para accesos secundarios */}
-        <div className="hidden md:block border-t border-gray-50">
+        <div className="hidden md:block border-t border-gray-50 dark:border-gray-800">
           <div className="max-w-5xl mx-auto px-4 h-9 flex items-center gap-4">
             {MENU_EXTRA.map(n => (
               <Link key={n.to} to={n.to}
-                className={`text-xs font-medium transition-colors ${location.pathname === n.to ? 'text-brand-600' : 'text-gray-400 hover:text-gray-600'}`}>
+                className={`text-xs font-medium transition-colors ${location.pathname === n.to ? 'text-brand-600 dark:text-brand-300' : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'}`}>
                 {n.icon} {n.label}
               </Link>
             ))}
@@ -117,11 +122,11 @@ export default function Layout({ children }) {
         {children}
       </main>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-30">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-30 dark:bg-gray-900 dark:border-gray-800">
         <div className="flex">
           {NAV.map(n => (
             <Link key={n.to} to={n.to}
-              className={`flex-1 flex flex-col items-center py-2 text-xs font-medium transition-colors ${location.pathname === n.to ? 'text-brand-600' : 'text-gray-400'}`}>
+              className={`flex-1 flex flex-col items-center py-2 text-xs font-medium transition-colors ${location.pathname === n.to ? 'text-brand-600 dark:text-brand-300' : 'text-gray-400 dark:text-gray-500'}`}>
               <span className="text-lg">{n.icon}</span>
               <span className="text-[10px]">{n.label}</span>
             </Link>

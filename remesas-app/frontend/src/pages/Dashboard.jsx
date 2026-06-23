@@ -24,7 +24,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Hola, {user?.nombre?.split(' ')[0]} 👋</h1>
-        <p className="text-gray-500 text-sm">Bienvenido a RemesasVE</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">Bienvenido a RemesasVE</p>
       </div>
 
       {/* Aviso de verificación */}
@@ -86,7 +86,7 @@ export default function Dashboard() {
       {limites && (
         <div className="card">
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-500">Uso mensual</span>
+            <span className="text-gray-500 dark:text-gray-400">Uso mensual</span>
             <span className="font-medium">${fmtCLP(limites.uso.mes)} / ${fmtCLP(limites.limites.mensual)}</span>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">

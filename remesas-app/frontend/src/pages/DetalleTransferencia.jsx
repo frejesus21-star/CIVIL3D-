@@ -58,7 +58,7 @@ export default function DetalleTransferencia() {
   }
 
   if (loading) return <div className="text-center py-12 text-gray-400">Cargando...</div>;
-  if (!t) return <div className="text-center py-12"><p className="text-gray-500">Transferencia no encontrada</p><Link to="/historial" className="text-brand-600 hover:underline">← Volver</Link></div>;
+  if (!t) return <div className="text-center py-12"><p className="text-gray-500 dark:text-gray-400">Transferencia no encontrada</p><Link to="/historial" className="text-brand-600 hover:underline">← Volver</Link></div>;
 
   const cancelada = t.estado === 'cancelada' || t.estado === 'fallida';
   const idxActual = PASOS_ESTADO.indexOf(t.estado);
@@ -66,12 +66,12 @@ export default function DetalleTransferencia() {
   return (
     <div className="max-w-md mx-auto space-y-5">
       <div className="flex items-center gap-3 print:hidden">
-        <Link to="/historial" className="text-gray-400 hover:text-gray-600">←</Link>
+        <Link to="/historial" className="text-gray-400 hover:text-gray-600 dark:text-gray-300">←</Link>
         <h1 className="text-xl font-bold flex-1">Detalle de transferencia</h1>
-        <button onClick={descargarPDF} disabled={descargando} className="text-sm text-gray-500 hover:text-gray-900" title="Descargar comprobante PDF">
+        <button onClick={descargarPDF} disabled={descargando} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100" title="Descargar comprobante PDF">
           {descargando ? '…' : '⬇️'}
         </button>
-        <button onClick={() => window.print()} className="text-sm text-gray-500 hover:text-gray-900" title="Imprimir comprobante">🖨️</button>
+        <button onClick={() => window.print()} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:text-gray-100" title="Imprimir comprobante">🖨️</button>
       </div>
 
       {/* Estado destacado */}
@@ -79,7 +79,7 @@ export default function DetalleTransferencia() {
         <div className="text-4xl">{ESTADO_ICON[t.estado]}</div>
         <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${ESTADO_COLOR[t.estado]}`}>{t.estado}</span>
         <p className="text-2xl font-bold">{fmtVES(t.monto_ves)} Bs.</p>
-        <p className="text-sm text-gray-500">${fmtCLP(t.monto_clp)} CLP enviados</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">${fmtCLP(t.monto_clp)} CLP enviados</p>
       </div>
 
       {/* Timeline de progreso */}
@@ -100,7 +100,7 @@ export default function DetalleTransferencia() {
                     {i < PASOS_ESTADO.length - 1 && <div className={`w-0.5 h-8 ${idxActual > i ? 'bg-brand-500' : 'bg-gray-200'}`} />}
                   </div>
                   <div className="pb-4">
-                    <p className={`text-sm font-medium ${alcanzado ? 'text-gray-900' : 'text-gray-400'}`}>{DESC_ESTADO[estado]}</p>
+                    <p className={`text-sm font-medium ${alcanzado ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}>{DESC_ESTADO[estado]}</p>
                     {evento && <p className="text-xs text-gray-400">{evento.descripcion}</p>}
                     {evento && <p className="text-xs text-gray-300">{fmtFechaHora(evento.created_at)}</p>}
                   </div>
@@ -146,7 +146,7 @@ export default function DetalleTransferencia() {
 
 const Fila = ({ k, v }) => (
   <div className="flex justify-between py-3 text-sm">
-    <span className="text-gray-500">{k}</span>
+    <span className="text-gray-500 dark:text-gray-400">{k}</span>
     <span className="font-medium text-right">{v}</span>
   </div>
 );

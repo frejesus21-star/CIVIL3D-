@@ -32,12 +32,12 @@ export default function Historial() {
       ) : data.rows.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-4xl mb-3">📋</div>
-          <p className="text-gray-500">No tienes transferencias aún</p>
+          <p className="text-gray-500 dark:text-gray-400">No tienes transferencias aún</p>
           <Link to="/transferir" className="btn-primary mt-4 inline-flex">Hacer primera transferencia</Link>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500">{data.total} transferencia{data.total !== 1 ? 's' : ''} en total</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{data.total} transferencia{data.total !== 1 ? 's' : ''} en total</p>
           <div className="space-y-3">
             {data.rows.map(t => (
               <Link key={t.id} to={`/historial/${t.id}`} className="card flex items-center gap-4 hover:shadow-md transition-shadow block">
@@ -65,7 +65,7 @@ export default function Historial() {
           {data.pages > 1 && (
             <div className="flex justify-center gap-2">
               <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="btn-secondary px-3 py-1.5 text-sm">← Anterior</button>
-              <span className="flex items-center text-sm text-gray-500">{page} / {data.pages}</span>
+              <span className="flex items-center text-sm text-gray-500 dark:text-gray-400">{page} / {data.pages}</span>
               <button disabled={page === data.pages} onClick={() => setPage(p => p + 1)} className="btn-secondary px-3 py-1.5 text-sm">Siguiente →</button>
             </div>
           )}

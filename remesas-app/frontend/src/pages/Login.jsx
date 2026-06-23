@@ -32,12 +32,12 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-brand-50 to-white">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-brand-50 to-white dark:from-gray-900 dark:to-gray-950">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">💸</div>
-          <h1 className="text-2xl font-bold text-gray-900">RemesasVE</h1>
-          <p className="text-gray-500 text-sm mt-1">Envía dinero de Chile a Venezuela</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">RemesasVE</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Envía dinero de Chile a Venezuela</p>
         </div>
         <div className="card">
           <h2 className="text-lg font-semibold mb-5">Iniciar sesión</h2>
@@ -66,7 +66,7 @@ export default function Login() {
               {loading ? 'Ingresando...' : (requiere2fa ? 'Verificar' : 'Ingresar')}
             </button>
           </form>
-          <p className="text-center text-sm text-gray-500 mt-5">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
             ¿No tienes cuenta?{' '}
             <Link to="/register" className="text-brand-600 font-medium hover:underline">Regístrate</Link>
           </p>

@@ -64,11 +64,11 @@ export default function Perfil() {
 
       {/* Datos no editables */}
       <div className="card space-y-2">
-        <div className="flex justify-between text-sm"><span className="text-gray-500">Email</span><span className="font-medium">{user?.email}</span></div>
-        <div className="flex justify-between text-sm"><span className="text-gray-500">RUT</span><span className="font-medium">{user?.rut ? formatRut(user.rut) : '-'}</span></div>
+        <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">Email</span><span className="font-medium">{user?.email}</span></div>
+        <div className="flex justify-between text-sm"><span className="text-gray-500 dark:text-gray-400">RUT</span><span className="font-medium">{user?.rut ? formatRut(user.rut) : '-'}</span></div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Verificación</span>
-          <span className={`font-medium ${user?.kyc_estado === 'verificado' ? 'text-green-600' : 'text-gray-600'}`}>
+          <span className="text-gray-500 dark:text-gray-400">Verificación</span>
+          <span className={`font-medium ${user?.kyc_estado === 'verificado' ? 'text-green-600' : 'text-gray-600 dark:text-gray-300'}`}>
             {user?.kyc_estado === 'verificado' ? '✅ Verificado' : 'Pendiente'}
           </span>
         </div>

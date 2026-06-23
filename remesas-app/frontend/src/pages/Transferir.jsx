@@ -83,19 +83,19 @@ export default function Transferir() {
       <div className="max-w-md mx-auto space-y-5">
         <div className="card text-center space-y-4">
           <div className="text-5xl">✅</div>
-          <h2 className="text-xl font-bold text-gray-900">¡Transferencia enviada!</h2>
-          <p className="text-gray-500 text-sm">Tu dinero está siendo procesado</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">¡Transferencia enviada!</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Tu dinero está siendo procesado</p>
           <div className="bg-brand-50 rounded-xl p-4 text-left space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Referencia</span>
+              <span className="text-gray-500 dark:text-gray-400">Referencia</span>
               <span className="font-mono font-semibold">{exito.referencia}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Enviaste</span>
+              <span className="text-gray-500 dark:text-gray-400">Enviaste</span>
               <span className="font-semibold">${fmtCLP(exito.monto_clp)} CLP</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">El destinatario recibe</span>
+              <span className="text-gray-500 dark:text-gray-400">El destinatario recibe</span>
               <span className="font-semibold text-brand-600">{fmtVES(exito.monto_ves)} Bs.</span>
             </div>
           </div>
@@ -117,7 +117,7 @@ export default function Transferir() {
           <div key={p} className={`flex-1 h-1.5 rounded-full ${i <= paso ? 'bg-brand-500' : 'bg-gray-200'}`} />
         ))}
       </div>
-      <p className="text-sm text-gray-500 font-medium">Paso {paso + 1} de {PASOS.length}: <span className="text-gray-900">{PASOS[paso]}</span></p>
+      <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Paso {paso + 1} de {PASOS.length}: <span className="text-gray-900 dark:text-gray-100">{PASOS[paso]}</span></p>
 
       {/* Paso 0: Monto */}
       {paso === 0 && (
@@ -125,11 +125,11 @@ export default function Transferir() {
           {/* Toggle modo */}
           <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
             <button onClick={() => cambiarModo('envio')}
-              className={`py-2 rounded-lg text-sm font-medium transition-colors ${modo === 'envio' ? 'bg-white shadow text-brand-700' : 'text-gray-500'}`}>
+              className={`py-2 rounded-lg text-sm font-medium transition-colors ${modo === 'envio' ? 'bg-white shadow text-brand-700' : 'text-gray-500 dark:text-gray-400'}`}>
               Quiero enviar
             </button>
             <button onClick={() => cambiarModo('recibo')}
-              className={`py-2 rounded-lg text-sm font-medium transition-colors ${modo === 'recibo' ? 'bg-white shadow text-brand-700' : 'text-gray-500'}`}>
+              className={`py-2 rounded-lg text-sm font-medium transition-colors ${modo === 'recibo' ? 'bg-white shadow text-brand-700' : 'text-gray-500 dark:text-gray-400'}`}>
               Quiero que reciban
             </button>
           </div>
@@ -153,10 +153,10 @@ export default function Transferir() {
           {cotizacion && (
             <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 space-y-2">
               <p className="text-sm font-semibold text-brand-700 mb-2">Resumen</p>
-              <div className="flex justify-between text-sm"><span className="text-gray-600">Monto enviado</span><span>${fmtCLP(cotizacion.monto_clp)} CLP</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-600">Comisión ({cotizacion.comision_pct}%)</span><span>-${fmtCLP(cotizacion.comision_clp)} CLP</span></div>
-              <div className="border-t border-brand-200 pt-2 flex justify-between text-sm"><span className="text-gray-600">Neto</span><span>${fmtCLP(cotizacion.monto_neto_clp)} CLP</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-600">Equivalente USD</span><span>${cotizacion.monto_usd} USD</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-gray-300">Monto enviado</span><span>${fmtCLP(cotizacion.monto_clp)} CLP</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-gray-300">Comisión ({cotizacion.comision_pct}%)</span><span>-${fmtCLP(cotizacion.comision_clp)} CLP</span></div>
+              <div className="border-t border-brand-200 pt-2 flex justify-between text-sm"><span className="text-gray-600 dark:text-gray-300">Neto</span><span>${fmtCLP(cotizacion.monto_neto_clp)} CLP</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-gray-300">Equivalente USD</span><span>${cotizacion.monto_usd} USD</span></div>
               <div className="flex justify-between font-bold text-brand-700"><span>Destinatario recibe</span><span>{fmtVES(cotizacion.monto_ves)} Bs.</span></div>
               <p className="text-xs text-gray-400 pt-1">Tasa: 1 USD = {fmtCLP(cotizacion.tasa_usd_ves)} Bs. (paralelo) · {fmtCLP(cotizacion.tasa_usd_clp)} CLP</p>
             </div>
@@ -192,7 +192,7 @@ export default function Transferir() {
                   <input type="radio" className="hidden" value={c.id} checked={cuentaId === c.id} onChange={() => setCuentaId(c.id)} />
                   <div className="flex-1">
                     <p className="font-medium text-sm">{c.banco}</p>
-                    <p className="text-xs text-gray-500">{c.tipo_cuenta} · ···{c.numero_cuenta.slice(-4)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{c.tipo_cuenta} · ···{c.numero_cuenta.slice(-4)}</p>
                     <p className="text-xs text-gray-400">{c.titular}</p>
                   </div>
                   {cuentaId === c.id && <span className="text-brand-500">✓</span>}
@@ -226,7 +226,7 @@ export default function Transferir() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-sm">{d.nombre} {d.favorito && <span className="text-amber-400">★</span>}</p>
-                    <p className="text-xs text-gray-500">{d.tipo === 'pago_movil' ? '📱 Pago Móvil' : '🏦 Banco'} · {d.banco}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{d.tipo === 'pago_movil' ? '📱 Pago Móvil' : '🏦 Banco'} · {d.banco}</p>
                     {d.telefono && <p className="text-xs text-gray-400">{d.telefono}</p>}
                   </div>
                   {destId === d.id && <span className="text-brand-500">✓</span>}
@@ -256,26 +256,26 @@ export default function Transferir() {
             )}
             <div className="space-y-3">
               <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                <span className="text-gray-500">Envías</span>
+                <span className="text-gray-500 dark:text-gray-400">Envías</span>
                 <span className="font-semibold text-lg">${fmtCLP(cotizacion.monto_clp)} CLP</span>
               </div>
               <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                <span className="text-gray-500">Comisión</span>
+                <span className="text-gray-500 dark:text-gray-400">Comisión</span>
                 <span>-${fmtCLP(cotizacion.comision_clp)} CLP</span>
               </div>
               <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                <span className="text-gray-500">Destinatario recibe</span>
+                <span className="text-gray-500 dark:text-gray-400">Destinatario recibe</span>
                 <span className="font-bold text-brand-600 text-base">{fmtVES(cotizacion.monto_ves)} Bs.</span>
               </div>
               {cuenta && (
                 <div className="flex justify-between text-sm py-2 border-b border-gray-100">
-                  <span className="text-gray-500">Desde</span>
+                  <span className="text-gray-500 dark:text-gray-400">Desde</span>
                   <span>{cuenta.banco} ···{cuenta.numero_cuenta.slice(-4)}</span>
                 </div>
               )}
               {dest && (
                 <div className="flex justify-between text-sm py-2">
-                  <span className="text-gray-500">Para</span>
+                  <span className="text-gray-500 dark:text-gray-400">Para</span>
                   <div className="text-right">
                     <p>{dest.nombre}</p>
                     <p className="text-xs text-gray-400">{dest.tipo === 'pago_movil' ? '📱 Pago Móvil' : '🏦 Banco'} · {dest.banco}</p>

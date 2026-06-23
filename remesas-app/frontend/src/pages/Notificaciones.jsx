@@ -44,7 +44,7 @@ export default function Notificaciones() {
       ) : items.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-4xl mb-3">🔔</div>
-          <p className="text-gray-500">No tienes notificaciones</p>
+          <p className="text-gray-500 dark:text-gray-400">No tienes notificaciones</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -57,7 +57,7 @@ export default function Notificaciones() {
                   <p className="font-semibold text-sm">{n.titulo}</p>
                   {!n.leida && <span className="w-2 h-2 rounded-full bg-brand-500 flex-shrink-0" />}
                 </div>
-                <p className="text-sm text-gray-600 mt-0.5">{n.mensaje}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-0.5">{n.mensaje}</p>
                 <p className="text-xs text-gray-400 mt-1">{fmtFechaHora(n.created_at)}</p>
               </div>
             </button>

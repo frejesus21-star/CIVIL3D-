@@ -33,7 +33,7 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-brand-50 to-white py-8">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-brand-50 to-white py-8 dark:from-gray-900 dark:to-gray-950">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">💸</div>
@@ -71,7 +71,7 @@ export default function Register() {
               {loading ? 'Creando cuenta...' : 'Crear cuenta'}
             </button>
           </form>
-          <p className="text-center text-sm text-gray-500 mt-5">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
             ¿Ya tienes cuenta?{' '}
             <Link to="/login" className="text-brand-600 font-medium hover:underline">Iniciar sesión</Link>
           </p>

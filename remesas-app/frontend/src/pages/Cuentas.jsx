@@ -86,7 +86,7 @@ export default function Cuentas() {
       {cuentas.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-4xl mb-3">🏦</div>
-          <p className="text-gray-500">No tienes cuentas registradas</p>
+          <p className="text-gray-500 dark:text-gray-400">No tienes cuentas registradas</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -95,7 +95,7 @@ export default function Cuentas() {
               <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 text-lg flex-shrink-0">🏦</div>
               <div className="flex-1">
                 <p className="font-semibold text-sm">{c.banco}</p>
-                <p className="text-xs text-gray-500">{c.tipo_cuenta} · ···{c.numero_cuenta.slice(-4)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{c.tipo_cuenta} · ···{c.numero_cuenta.slice(-4)}</p>
                 <p className="text-xs text-gray-400">{c.titular}</p>
               </div>
               <button onClick={() => eliminar(c.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1">✕</button>

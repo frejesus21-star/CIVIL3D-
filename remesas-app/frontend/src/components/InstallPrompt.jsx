@@ -52,13 +52,13 @@ export default function InstallPrompt() {
         <div className="flex-1">
           <p className="font-semibold text-sm">Instala RemesasVE</p>
           {esIOS ? (
-            <p className="text-xs text-gray-500 mt-0.5">Toca <span className="font-medium">Compartir</span> y luego <span className="font-medium">"Agregar a inicio"</span> para usarla como app.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Toca <span className="font-medium">Compartir</span> y luego <span className="font-medium">"Agregar a inicio"</span> para usarla como app.</p>
           ) : (
-            <p className="text-xs text-gray-500 mt-0.5">Úsala como app en tu celular, con acceso directo y pantalla completa.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Úsala como app en tu celular, con acceso directo y pantalla completa.</p>
           )}
           <div className="flex gap-2 mt-2">
             {!esIOS && <button onClick={instalar} className="btn-primary text-xs py-1.5 px-3">Instalar</button>}
-            <button onClick={cerrar} className="text-xs text-gray-400 hover:text-gray-600 py-1.5 px-2">Ahora no</button>
+            <button onClick={cerrar} className="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-300 py-1.5 px-2">Ahora no</button>
           </div>
         </div>
       </div>

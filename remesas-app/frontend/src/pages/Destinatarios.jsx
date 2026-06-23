@@ -74,7 +74,7 @@ export default function Destinatarios() {
               <div className="grid grid-cols-2 gap-2">
                 {[['pago_movil', '📱 Pago Móvil'], ['banco', '🏦 Banco']].map(([val, label]) => (
                   <button type="button" key={val}
-                    className={`py-2 px-3 rounded-xl border-2 text-sm font-medium transition-colors ${form.tipo === val ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                    className={`py-2 px-3 rounded-xl border-2 text-sm font-medium transition-colors ${form.tipo === val ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-gray-200 text-gray-600 dark:text-gray-300 hover:border-gray-300'}`}
                     onClick={() => setForm({ ...form, tipo: val })}>
                     {label}
                   </button>
@@ -119,7 +119,7 @@ export default function Destinatarios() {
       {dest.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-4xl mb-3">👥</div>
-          <p className="text-gray-500">No tienes destinatarios registrados</p>
+          <p className="text-gray-500 dark:text-gray-400">No tienes destinatarios registrados</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -130,7 +130,7 @@ export default function Destinatarios() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">{d.nombre}</p>
-                <p className="text-xs text-gray-500">{d.tipo === 'pago_movil' ? '📱 Pago Móvil' : '🏦 Banco'} · {d.banco}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{d.tipo === 'pago_movil' ? '📱 Pago Móvil' : '🏦 Banco'} · {d.banco}</p>
                 {d.telefono && <p className="text-xs text-gray-400">{d.telefono}</p>}
                 {d.numero_cuenta && <p className="text-xs text-gray-400 font-mono">···{d.numero_cuenta.slice(-6)}</p>}
                 <p className="text-xs text-gray-400">CI: {d.cedula}</p>

@@ -104,7 +104,7 @@ export default function TwoFactorSettings() {
       </p>
       <div className="grid grid-cols-2 gap-2 bg-white rounded-lg p-3 border border-amber-100">
         {codigosRespaldo.map(c => (
-          <code key={c} className="font-mono text-sm text-gray-800 text-center select-all">{c}</code>
+          <code key={c} className="font-mono text-sm text-gray-800 dark:text-gray-100 text-center select-all">{c}</code>
         ))}
       </div>
       <div className="flex gap-2">
@@ -118,7 +118,7 @@ export default function TwoFactorSettings() {
     <div className="card space-y-4">
       <div className="flex items-center justify-between">
         <p className="font-semibold">Verificación en dos pasos (2FA)</p>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${activado ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${activado ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500 dark:text-gray-400'}`}>
           {activado ? 'Activada' : 'Desactivada'}
         </span>
       </div>
@@ -126,7 +126,7 @@ export default function TwoFactorSettings() {
 
       {!activado && !setup && (
         <>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Añade una capa extra de seguridad. Necesitarás un código de tu app de autenticación
             (Google Authenticator, Authy, etc.) cada vez que inicies sesión.
           </p>
@@ -138,7 +138,7 @@ export default function TwoFactorSettings() {
 
       {!activado && setup && (
         <form onSubmit={activar} className="space-y-4">
-          <ol className="text-sm text-gray-600 space-y-2 list-decimal list-inside">
+          <ol className="text-sm text-gray-600 dark:text-gray-300 space-y-2 list-decimal list-inside">
             <li>Abre tu app de autenticación y agrega una cuenta nueva.</li>
             <li>Escanea el código QR o ingresa la clave manualmente:</li>
           </ol>
@@ -179,7 +179,7 @@ export default function TwoFactorSettings() {
             <div className="bg-gray-50 border border-gray-100 rounded-xl p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Códigos de respaldo</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Códigos de respaldo</p>
                   {disponibles !== null && (
                     <p className={`text-xs mt-0.5 ${disponibles <= 2 ? 'text-red-500' : 'text-gray-400'}`}>
                       {disponibles} disponible{disponibles === 1 ? '' : 's'}
@@ -192,7 +192,7 @@ export default function TwoFactorSettings() {
               </div>
               {mostrarRegen && (
                 <form onSubmit={regenerar} className="mt-3 space-y-2">
-                  <p className="text-xs text-gray-500">Esto invalida los códigos anteriores. Confirma tu contraseña.</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Esto invalida los códigos anteriores. Confirma tu contraseña.</p>
                   <input className="input" type="password" placeholder="Tu contraseña" required
                     value={password} onChange={e => setPassword(e.target.value)} />
                   <button type="submit" disabled={loading} className="btn-primary w-full text-sm py-2">
@@ -206,7 +206,7 @@ export default function TwoFactorSettings() {
           {/* Desactivar */}
           {!codigosRespaldo && !mostrarRegen && (
             <form onSubmit={desactivar} className="space-y-3 border-t border-gray-100 pt-4">
-              <p className="text-sm text-gray-500">Para desactivar el 2FA, confirma tu contraseña.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Para desactivar el 2FA, confirma tu contraseña.</p>
               <input className="input" type="password" placeholder="Tu contraseña" required
                 value={password} onChange={e => setPassword(e.target.value)} />
               <button type="submit" disabled={loading} className="w-full py-2.5 text-red-600 font-medium border border-red-200 hover:bg-red-50 rounded-xl transition-colors">
