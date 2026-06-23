@@ -24,7 +24,7 @@ Aplicación full-stack para enviar dinero desde **Chile (CLP)** a **Venezuela (V
 
 ### Envío de dinero
 - **Cotización bidireccional**: "quiero enviar X CLP" o "quiero que reciban X Bs"
-- Conversión transparente: CLP → USD → VES con comisión del 2,5%
+- Conversión transparente: CLP → USD → VES con comisión configurable (2,5% por defecto)
 - Flujo guiado en 4 pasos (monto → origen → destino → confirmar)
 - **Seguimiento en tiempo real** con timeline de estados (recibida → procesando → completada)
 - Cancelación de transferencias pendientes
@@ -43,6 +43,34 @@ Aplicación full-stack para enviar dinero desde **Chile (CLP)** a **Venezuela (V
 - Diseño responsive: navegación inferior en móvil, barra superior en escritorio
 - **PWA instalable**: se instala como app nativa en el celular (Android/iOS) con
   ícono propio, pantalla completa y service worker (app shell offline)
+- Banner de **mensaje de mantenimiento** configurable desde el panel admin
+
+### Panel de administración
+Acceso restringido a usuarios con rol admin (doble protección: middleware
+`adminAuth` en el backend + guardia de ruta en el frontend). Disponible en `/admin`.
+
+- **Dashboard**: total de usuarios, KYC pendientes, volumen del día y del mes,
+  distribución de transferencias por estado
+- **Usuarios**: listado paginado con búsqueda (nombre/email/RUT), detalle con
+  historial, y **aprobación/rechazo de KYC** (notifica al usuario)
+- **Transferencias**: listado con filtros por **estado** y **rango de fechas**,
+  edición de estado y notas internas (notifica cambios al usuario)
+- **Tasas y configuración**: ajuste manual de tasas USD/CLP y USD/VES (útil si las
+  APIs externas fallan), **comisión configurable en tiempo real** (% y mínimo CLP),
+  mensaje de mantenimiento, y botón para forzar recarga desde la API
+- **Auditoría**: registro de todas las acciones administrativas (quién hizo qué y
+  cuándo), con filtros por tipo de acción y rango de fechas
+- **Exportación a CSV** de usuarios y transferencias (compatible con Excel,
+  respeta los filtros activos)
+
+Para convertir un usuario en administrador, usa el endpoint protegido con
+`ADMIN_SEED_SECRET`:
+
+```bash
+curl -X POST http://localhost:4000/api/admin/seed \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"tu@email.com","secret":"<ADMIN_SEED_SECRET>"}'
+```
 
 ## Calidad
 
@@ -69,9 +97,13 @@ bash start.sh
 ```
 PORT=4000
 JWT_SECRET=tu_secreto_seguro
-FALLBACK_USD_CLP=950      # tasa de respaldo si las APIs externas fallan
-FALLBACK_USD_VES=45       # mantener actualizada (inflación VES)
+FALLBACK_USD_CLP=950             # tasa de respaldo si las APIs externas fallan
+FALLBACK_USD_VES=45             # mantener actualizada (inflación VES)
+ADMIN_SEED_SECRET=secreto_admin # protege el endpoint que asigna rol admin
 ```
+
+> La comisión ya **no** se configura por variable de entorno: se ajusta en vivo
+> desde el panel admin (Tasas y configuración) y se persiste en la base de datos.
 
 ## Estructura
 
@@ -79,20 +111,23 @@ FALLBACK_USD_VES=45       # mantener actualizada (inflación VES)
 remesas-app/
 ├── backend/
 │   └── src/
-│       ├── config/database.js          # SQLite + schema + migraciones
+│       ├── config/database.js          # SQLite + schema + migraciones + config
 │       ├── utils/validators.js         # RUT, cédula VE, teléfono pago móvil
 │       ├── services/
-│       │   ├── exchangeService.js      # tasas + cotización ida/vuelta + respaldo
+│       │   ├── exchangeService.js      # tasas + cotización ida/vuelta + respaldo + comisión
 │       │   ├── limitsService.js        # límites por nivel KYC
-│       │   └── notificationService.js  # notificaciones in-app
-│       ├── controllers/                # auth, kyc, cuentas, destinatarios, transferencias, notificaciones
-│       ├── middleware/                 # auth (JWT) + rateLimiter
+│       │   ├── notificationService.js  # notificaciones in-app
+│       │   └── auditService.js         # registro de acciones de admin
+│       ├── controllers/                # auth, kyc, cuentas, destinatarios, transferencias, notificaciones, admin
+│       ├── middleware/                 # auth (JWT) + adminAuth + rateLimiter
 │       └── routes/index.js
 └── frontend/
     └── src/
         ├── pages/      # Login, Register, Dashboard, Transferir, Historial,
         │               # DetalleTransferencia, Cuentas, Destinatarios,
         │               # Verificacion, Notificaciones, Perfil, Ayuda
+        │   └── admin/  # AdminLayout, AdminDashboard, AdminUsuarios,
+        │               # AdminTransferencias, AdminTasas, AdminLog
         ├── components/Layout.jsx
         ├── context/AuthContext.jsx
         ├── services/api.js
@@ -109,5 +144,5 @@ remesas-app/
 - Integración con procesador de pagos real (lado Chile) y red de pago en Venezuela
 - KYC real con verificación documental automatizada
 - Notificaciones por email/SMS/push
-- Panel de administración (tasas, comisiones, aprobación KYC, monitoreo de operaciones)
 - Autenticación de dos factores (2FA)
+- Reportes/gráficos de volumen en el panel admin
