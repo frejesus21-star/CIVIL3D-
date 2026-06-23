@@ -117,16 +117,16 @@ const plantillas = {
 
 // Envía una plantilla a un usuario por su id (busca su email/nombre).
 // Async sin await en el llamador: el correo se manda en segundo plano.
-function enviarPlantilla(userId, key, ...args) {
+async function enviarPlantilla(userId, key, ...args) {
   try {
     const db = require('../config/database');
-    const user = db.prepare('SELECT email, nombre FROM users WHERE id=?').get(userId);
+    const user = await db.prepare('SELECT email, nombre FROM users WHERE id=?').get(userId);
     if (!user || !user.email) return;
     const tpl = plantillas[key];
     if (!tpl) return;
     const { subject, html } = tpl(user.nombre, ...args);
-    // No bloquea: se resuelve en segundo plano
-    enviar({ to: user.email, subject, html });
+    // No bloquea al llamador: se resuelve en segundo plano
+    await enviar({ to: user.email, subject, html });
   } catch (err) {
     console.error('[email:plantilla:error]', err.message);
   }

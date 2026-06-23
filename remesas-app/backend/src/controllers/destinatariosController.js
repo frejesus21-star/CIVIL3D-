@@ -8,12 +8,12 @@ const BANCOS_VENEZUELA = [
   'Banplus','Banco del Tesoro','Banco Nacional de Crédito','Sofitasa'
 ];
 
-function listar(req, res) {
-  const rows = db.prepare('SELECT * FROM destinatarios WHERE user_id=? ORDER BY favorito DESC, nombre ASC').all(req.userId);
+async function listar(req, res) {
+  const rows = await db.prepare('SELECT * FROM destinatarios WHERE user_id=? ORDER BY favorito DESC, nombre ASC').all(req.userId);
   res.json(rows.map(r => ({ ...r, favorito: !!r.favorito })));
 }
 
-function crear(req, res) {
+async function crear(req, res) {
   const { nombre, tipo, banco, numero_cuenta, cedula, telefono } = req.body;
   if (!nombre || !tipo) return res.status(400).json({ error: 'Nombre y tipo son requeridos' });
 
@@ -41,22 +41,22 @@ function crear(req, res) {
   }
 
   const id = uuidv4();
-  db.prepare('INSERT INTO destinatarios (id,user_id,nombre,tipo,banco,numero_cuenta,cedula,telefono) VALUES (?,?,?,?,?,?,?,?)')
+  await db.prepare('INSERT INTO destinatarios (id,user_id,nombre,tipo,banco,numero_cuenta,cedula,telefono) VALUES (?,?,?,?,?,?,?,?)')
     .run(id, req.userId, nombre, tipo, banco || null, numero_cuenta || null, cedula || null, telefono || null);
-  const row = db.prepare('SELECT * FROM destinatarios WHERE id=?').get(id);
+  const row = await db.prepare('SELECT * FROM destinatarios WHERE id=?').get(id);
   res.status(201).json({ ...row, favorito: !!row.favorito });
 }
 
-function favorito(req, res) {
-  const row = db.prepare('SELECT * FROM destinatarios WHERE id=? AND user_id=?').get(req.params.id, req.userId);
+async function favorito(req, res) {
+  const row = await db.prepare('SELECT * FROM destinatarios WHERE id=? AND user_id=?').get(req.params.id, req.userId);
   if (!row) return res.status(404).json({ error: 'Destinatario no encontrado' });
   const nuevo = row.favorito ? 0 : 1;
-  db.prepare('UPDATE destinatarios SET favorito=? WHERE id=?').run(nuevo, row.id);
+  await db.prepare('UPDATE destinatarios SET favorito=? WHERE id=?').run(nuevo, row.id);
   res.json({ ...row, favorito: !!nuevo });
 }
 
-function eliminar(req, res) {
-  const result = db.prepare('DELETE FROM destinatarios WHERE id=? AND user_id=?').run(req.params.id, req.userId);
+async function eliminar(req, res) {
+  const result = await db.prepare('DELETE FROM destinatarios WHERE id=? AND user_id=?').run(req.params.id, req.userId);
   if (!result.changes) return res.status(404).json({ error: 'Destinatario no encontrado' });
   res.json({ ok: true });
 }

@@ -43,9 +43,9 @@ router.post('/notificaciones/:id/leida', auth, notifCtrl.marcarLeida);
 router.post('/notificaciones/leer-todas', auth, notifCtrl.marcarTodas);
 
 // Configuración pública (solo lectura, sin auth)
-router.get('/config/publica', (req, res) => {
+router.get('/config/publica', async (req, res) => {
   const { getConfig } = require('../config/database');
-  res.json({ mensaje_mantenimiento: getConfig('mensaje_mantenimiento') || '' });
+  res.json({ mensaje_mantenimiento: (await getConfig('mensaje_mantenimiento')) || '' });
 });
 
 // Tasas públicas
@@ -98,11 +98,11 @@ router.get('/admin/export/usuarios', adminAuth, adminCtrl.exportarUsuarios);
 router.get('/admin/export/transferencias', adminAuth, adminCtrl.exportarTransferencias);
 
 // Promoción de usuario a admin (solo por consola / primer uso protegido por contraseña de env)
-router.post('/admin/seed', (req, res) => {
+router.post('/admin/seed', async (req, res) => {
   const secret = process.env.ADMIN_SEED_SECRET;
   if (!secret || req.body.secret !== secret) return res.status(403).json({ error: 'Forbidden' });
   const db = require('../config/database');
-  const result = db.prepare('UPDATE users SET is_admin=1 WHERE email=?').run(req.body.email);
+  const result = await db.prepare('UPDATE users SET is_admin=1 WHERE email=?').run(req.body.email);
   if (result.changes === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
   res.json({ ok: true, mensaje: `${req.body.email} ahora es administrador` });
 });

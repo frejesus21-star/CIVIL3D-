@@ -2,8 +2,8 @@ const fetch = require('node-fetch');
 const db = require('../config/database');
 const { getConfig } = require('../config/database');
 
-function getComisionPct() {
-  const val = getConfig('comision_pct');
+async function getComisionPct() {
+  const val = await getConfig('comision_pct');
   const n = parseFloat(val);
   return (!isNaN(n) && n >= 0 && n <= 100) ? n : 2.5;
 }
@@ -39,7 +39,7 @@ async function fetchUsdClp() {
 }
 
 async function getRates() {
-  const cached = db.prepare('SELECT * FROM tasas_cache ORDER BY id DESC LIMIT 1').get();
+  const cached = await db.prepare('SELECT * FROM tasas_cache ORDER BY id DESC LIMIT 1').get();
   const now = Date.now();
 
   if (cached && (now - new Date(cached.updated_at).getTime()) < CACHE_TTL_MS) {
@@ -49,7 +49,7 @@ async function getRates() {
   try {
     const [usd_ves, usd_clp] = await Promise.all([fetchParaleloDolar(), fetchUsdClp()]);
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO tasas_cache (usd_clp, usd_ves, fuente, updated_at)
       VALUES (?, ?, 'dolarapi+openexchange', CURRENT_TIMESTAMP)
     `).run(usd_clp, usd_ves);
@@ -71,7 +71,7 @@ async function getRates() {
   }
 }
 
-function calcularTransferencia(monto_clp, rates, comision_pct = getComisionPct()) {
+function calcularTransferencia(monto_clp, rates, comision_pct = 2.5) {
   const comision_clp = monto_clp * (comision_pct / 100);
   const monto_neto_clp = monto_clp - comision_clp;
   const monto_usd = monto_neto_clp / rates.usd_clp;
@@ -89,7 +89,7 @@ function calcularTransferencia(monto_clp, rates, comision_pct = getComisionPct()
 }
 
 // Cotización inversa: dado cuánto debe LLEGAR en Bs., calcula cuánto pagar en CLP
-function calcularInverso(monto_ves, rates, comision_pct = getComisionPct()) {
+function calcularInverso(monto_ves, rates, comision_pct = 2.5) {
   const monto_usd = monto_ves / rates.usd_ves;
   const monto_neto_clp = monto_usd * rates.usd_clp;
   // monto_neto = monto_clp * (1 - comision_pct/100)  =>  monto_clp = monto_neto / (1 - c)
@@ -105,7 +105,7 @@ const _origGetRates = getRates;
 async function getRatesWithInvalidation() {
   if (_cacheInvalidated) {
     _cacheInvalidated = false;
-    db.prepare('DELETE FROM tasas_cache WHERE manual = 0').run();
+    await db.prepare('DELETE FROM tasas_cache WHERE manual = 0').run();
   }
   return _origGetRates();
 }

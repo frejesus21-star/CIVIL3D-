@@ -18,37 +18,35 @@ function generarCodigo() {
 
 // Regenera el set completo: borra los anteriores y crea CANTIDAD nuevos.
 // Devuelve los códigos en texto plano (solo se muestran esta vez).
-function generar(userId) {
-  db.prepare('DELETE FROM backup_codes WHERE user_id=?').run(userId);
+async function generar(userId) {
   const codigos = [];
-  const insert = db.prepare('INSERT INTO backup_codes (id, user_id, code_hash) VALUES (?,?,?)');
-  const tx = db.transaction(() => {
+  await db.tx(async (q) => {
+    await q('DELETE FROM backup_codes WHERE user_id=?').run(userId);
     for (let i = 0; i < CANTIDAD; i++) {
       const codigo = generarCodigo();
       codigos.push(codigo);
-      insert.run(randomUUID(), userId, hash(codigo));
+      await q('INSERT INTO backup_codes (id, user_id, code_hash) VALUES (?,?,?)').run(randomUUID(), userId, hash(codigo));
     }
   });
-  tx();
   return codigos;
 }
 
 // Verifica y CONSUME un código de respaldo. Devuelve true si era válido.
-function consumir(userId, codigo) {
+async function consumir(userId, codigo) {
   if (!codigo) return false;
   const h = hash(codigo);
-  const row = db.prepare('SELECT id FROM backup_codes WHERE user_id=? AND code_hash=? AND usado=0').get(userId, h);
+  const row = await db.prepare('SELECT id FROM backup_codes WHERE user_id=? AND code_hash=? AND usado=0').get(userId, h);
   if (!row) return false;
-  db.prepare('UPDATE backup_codes SET usado=1 WHERE id=?').run(row.id);
+  await db.prepare('UPDATE backup_codes SET usado=1 WHERE id=?').run(row.id);
   return true;
 }
 
-function contarDisponibles(userId) {
-  return db.prepare('SELECT COUNT(*) as n FROM backup_codes WHERE user_id=? AND usado=0').get(userId).n;
+async function contarDisponibles(userId) {
+  return (await db.prepare('SELECT COUNT(*) as n FROM backup_codes WHERE user_id=? AND usado=0').get(userId)).n;
 }
 
-function eliminar(userId) {
-  db.prepare('DELETE FROM backup_codes WHERE user_id=?').run(userId);
+async function eliminar(userId) {
+  await db.prepare('DELETE FROM backup_codes WHERE user_id=?').run(userId);
 }
 
 module.exports = { generar, consumir, contarDisponibles, eliminar };

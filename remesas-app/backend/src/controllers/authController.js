@@ -35,12 +35,12 @@ async function register(req, res) {
   if (String(password).length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
 
   const rutLimpio = limpiarRut(rut);
-  const existing = db.prepare('SELECT id FROM users WHERE email = ? OR rut = ?').get(email.toLowerCase(), rutLimpio);
+  const existing = await db.prepare('SELECT id FROM users WHERE email = ? OR rut = ?').get(email.toLowerCase(), rutLimpio);
   if (existing) return res.status(409).json({ error: 'Email o RUT ya registrado' });
 
   const hash = await bcrypt.hash(password, 12);
   const id = uuidv4();
-  db.prepare('INSERT INTO users (id,nombre,email,telefono,rut,password_hash) VALUES (?,?,?,?,?,?)')
+  await db.prepare('INSERT INTO users (id,nombre,email,telefono,rut,password_hash) VALUES (?,?,?,?,?,?)')
     .run(id, nombre, email.toLowerCase(), telefono || null, rutLimpio, hash);
 
   notif.crear(id, {
@@ -50,10 +50,10 @@ async function register(req, res) {
   });
 
   mailer.enviarPlantilla(id, 'bienvenida');
-  const tokenVerif = tokens.crear(id, 'verificar_email', 24 * 60);
+  const tokenVerif = await tokens.crear(id, 'verificar_email', 24 * 60);
   mailer.enviarPlantilla(id, 'verificar_email', tokenVerif);
 
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(id);
+  const user = await db.prepare('SELECT * FROM users WHERE id=?').get(id);
   res.status(201).json({ token: signToken(id), user: publicUser(user) });
 }
 
@@ -61,7 +61,7 @@ async function login(req, res) {
   const { email, password, codigo_2fa } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email y contraseña requeridos' });
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
+  const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
   if (!user) return res.status(401).json({ error: 'Credenciales incorrectas' });
 
   const valid = await bcrypt.compare(password, user.password_hash);
@@ -74,13 +74,13 @@ async function login(req, res) {
       return res.status(401).json({ requiere_2fa: true, mensaje: 'Ingresa el código de tu app de autenticación' });
     }
     const okTotp = totp.verificar(user.totp_secret, codigo_2fa);
-    const okBackup = !okTotp && backupCodes.consumir(user.id, codigo_2fa);
+    const okBackup = !okTotp && await backupCodes.consumir(user.id, codigo_2fa);
     if (!okTotp && !okBackup) {
       return res.status(401).json({ requiere_2fa: true, error: 'Código de verificación incorrecto' });
     }
     if (okBackup) {
       // Avisa al usuario que usó un código de respaldo (y cuántos quedan)
-      const quedan = backupCodes.contarDisponibles(user.id);
+      const quedan = await backupCodes.contarDisponibles(user.id);
       notif.crear(user.id, {
         tipo: 'info',
         titulo: 'Inicio de sesión con código de respaldo',
@@ -92,21 +92,21 @@ async function login(req, res) {
   res.json({ token: signToken(user.id), user: publicUser(user) });
 }
 
-function me(req, res) {
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+async function me(req, res) {
+  const user = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
   res.json(publicUser(user));
 }
 
-function actualizarPerfil(req, res) {
+async function actualizarPerfil(req, res) {
   const { nombre, telefono, direccion, ciudad } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+  const user = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-  db.prepare('UPDATE users SET nombre=?, telefono=?, direccion=?, ciudad=? WHERE id=?')
+  await db.prepare('UPDATE users SET nombre=?, telefono=?, direccion=?, ciudad=? WHERE id=?')
     .run(nombre || user.nombre, telefono ?? user.telefono, direccion ?? user.direccion, ciudad ?? user.ciudad, req.userId);
 
-  res.json(publicUser(db.prepare('SELECT * FROM users WHERE id=?').get(req.userId)));
+  res.json(publicUser(await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId)));
 }
 
 async function cambiarPassword(req, res) {
@@ -114,18 +114,18 @@ async function cambiarPassword(req, res) {
   if (!password_actual || !password_nueva) return res.status(400).json({ error: 'Contraseña actual y nueva son requeridas' });
   if (String(password_nueva).length < 8) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres' });
 
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+  const user = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
   const valid = await bcrypt.compare(password_actual, user.password_hash);
   if (!valid) return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
 
   const hash = await bcrypt.hash(password_nueva, 12);
-  db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, req.userId);
+  await db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, req.userId);
   res.json({ ok: true });
 }
 
-function stats(req, res) {
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
-  const agg = db.prepare(`
+async function stats(req, res) {
+  const user = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+  const agg = await db.prepare(`
     SELECT
       COUNT(*) AS total_transferencias,
       COALESCE(SUM(CASE WHEN estado='completada' THEN monto_clp ELSE 0 END),0) AS total_enviado_clp,
@@ -135,37 +135,37 @@ function stats(req, res) {
     FROM transferencias WHERE user_id=?
   `).get(req.userId);
 
-  res.json({ ...agg, limites: getResumen(user) });
+  res.json({ ...agg, limites: await getResumen(user) });
 }
 
 // ── Verificación de email ──────────────────────────────────────────────────
-function verificarEmail(req, res) {
+async function verificarEmail(req, res) {
   const token = req.body.token || req.query.token;
-  const userId = tokens.consumir('verificar_email', token);
+  const userId = await tokens.consumir('verificar_email', token);
   if (!userId) return res.status(400).json({ error: 'El enlace de verificación no es válido o ha expirado.' });
 
-  db.prepare('UPDATE users SET email_verificado=1 WHERE id=?').run(userId);
+  await db.prepare('UPDATE users SET email_verificado=1 WHERE id=?').run(userId);
   res.json({ ok: true, mensaje: 'Tu correo fue verificado correctamente.' });
 }
 
-function reenviarVerificacion(req, res) {
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+async function reenviarVerificacion(req, res) {
+  const user = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
   if (user.email_verificado) return res.status(400).json({ error: 'Tu correo ya está verificado' });
 
-  const tokenVerif = tokens.crear(user.id, 'verificar_email', 24 * 60);
+  const tokenVerif = await tokens.crear(user.id, 'verificar_email', 24 * 60);
   mailer.enviarPlantilla(user.id, 'verificar_email', tokenVerif);
   res.json({ ok: true, mensaje: 'Te enviamos un nuevo correo de verificación.' });
 }
 
 // ── Recuperación de contraseña ─────────────────────────────────────────────
 // Siempre responde 200 para no revelar si un email está registrado.
-function solicitarRecuperacion(req, res) {
+async function solicitarRecuperacion(req, res) {
   const { email } = req.body;
   if (email) {
-    const user = db.prepare('SELECT id FROM users WHERE email=?').get(String(email).toLowerCase());
+    const user = await db.prepare('SELECT id FROM users WHERE email=?').get(String(email).toLowerCase());
     if (user) {
-      const token = tokens.crear(user.id, 'recuperar_password', 60);
+      const token = await tokens.crear(user.id, 'recuperar_password', 60);
       mailer.enviarPlantilla(user.id, 'recuperar_password', token);
     }
   }
@@ -176,11 +176,11 @@ async function restablecerPassword(req, res) {
   const { token, password } = req.body;
   if (!password || String(password).length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
 
-  const userId = tokens.consumir('recuperar_password', token);
+  const userId = await tokens.consumir('recuperar_password', token);
   if (!userId) return res.status(400).json({ error: 'El enlace para restablecer la contraseña no es válido o ha expirado.' });
 
   const hash = await bcrypt.hash(password, 12);
-  db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, userId);
+  await db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, userId);
   notif.crear(userId, {
     tipo: 'info',
     titulo: 'Contraseña actualizada',

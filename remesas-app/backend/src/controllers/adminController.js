@@ -3,18 +3,19 @@ const { getConfig, setConfig } = require('../config/database');
 const { getRates, clearCache } = require('../services/exchangeService');
 const audit = require('../services/auditService');
 const email = require('../services/emailService');
+const { randomUUID } = require('crypto');
 
 // ── Dashboard de estadísticas ──────────────────────────────────────────────
-function stats(req, res) {
-  const totalUsuarios = db.prepare('SELECT COUNT(*) as n FROM users WHERE is_admin = 0').get().n;
-  const kycPendientes = db.prepare("SELECT COUNT(*) as n FROM users WHERE kyc_estado = 'en_revision'").get().n;
+async function stats(req, res) {
+  const totalUsuarios = (await db.prepare('SELECT COUNT(*) as n FROM users WHERE is_admin = 0').get()).n;
+  const kycPendientes = (await db.prepare("SELECT COUNT(*) as n FROM users WHERE kyc_estado = 'en_revision'").get()).n;
   const hoy = new Date().toISOString().slice(0, 10);
-  const transHoy = db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol FROM transferencias WHERE DATE(created_at)=?").get(hoy);
-  const transMes = db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol FROM transferencias WHERE strftime('%Y-%m',created_at)=strftime('%Y-%m','now')").get();
-  const porEstado = db.prepare("SELECT estado, COUNT(*) as n FROM transferencias GROUP BY estado").all();
+  const transHoy = await db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol FROM transferencias WHERE DATE(created_at)=?").get(hoy);
+  const transMes = await db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol FROM transferencias WHERE strftime('%Y-%m',created_at)=strftime('%Y-%m','now')").get();
+  const porEstado = await db.prepare("SELECT estado, COUNT(*) as n FROM transferencias GROUP BY estado").all();
 
   // Serie diaria de los últimos 14 días (para el gráfico de volumen)
-  const filas = db.prepare(`
+  const filas = await db.prepare(`
     SELECT DATE(created_at) as dia, COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol
     FROM transferencias
     WHERE DATE(created_at) >= DATE('now','-13 days')
@@ -33,17 +34,17 @@ function stats(req, res) {
 }
 
 // ── Usuarios ───────────────────────────────────────────────────────────────
-function listarUsuarios(req, res) {
+async function listarUsuarios(req, res) {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = 20;
   const offset = (page - 1) * limit;
   const buscar = req.query.buscar ? `%${req.query.buscar}%` : '%';
 
-  const total = db.prepare(
+  const total = (await db.prepare(
     "SELECT COUNT(*) as n FROM users WHERE is_admin=0 AND (nombre LIKE ? OR email LIKE ? OR rut LIKE ?)"
-  ).get(buscar, buscar, buscar).n;
+  ).get(buscar, buscar, buscar)).n;
 
-  const rows = db.prepare(`
+  const rows = await db.prepare(`
     SELECT id, nombre, email, rut, telefono, kyc_estado, kyc_nivel,
            ciudad, created_at,
            (SELECT COUNT(*) FROM transferencias WHERE user_id=users.id) as num_trans,
@@ -55,15 +56,15 @@ function listarUsuarios(req, res) {
   res.json({ rows, total, pages: Math.ceil(total / limit), page });
 }
 
-function getUsuario(req, res) {
-  const user = db.prepare(`
+async function getUsuario(req, res) {
+  const user = await db.prepare(`
     SELECT id, nombre, email, rut, telefono, kyc_estado, kyc_nivel,
            fecha_nacimiento, direccion, ciudad, tipo_documento, numero_documento, created_at
     FROM users WHERE id = ? AND is_admin = 0
   `).get(req.params.id);
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
-  const transferencias = db.prepare(
+  const transferencias = await db.prepare(
     'SELECT id, referencia, monto_clp, monto_ves, estado, created_at FROM transferencias WHERE user_id=? ORDER BY created_at DESC LIMIT 10'
   ).all(req.params.id);
 
@@ -71,31 +72,28 @@ function getUsuario(req, res) {
 }
 
 // ── KYC: aprobar / rechazar ────────────────────────────────────────────────
-function aprobarKYC(req, res) {
-  const user = db.prepare("SELECT id, kyc_estado FROM users WHERE id=? AND is_admin=0").get(req.params.id);
+async function aprobarKYC(req, res) {
+  const user = await db.prepare("SELECT id, kyc_estado FROM users WHERE id=? AND is_admin=0").get(req.params.id);
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
   if (user.kyc_estado !== 'en_revision') return res.status(400).json({ error: 'El usuario no está en revisión' });
 
-  db.prepare("UPDATE users SET kyc_estado='verificado', kyc_nivel=2 WHERE id=?").run(req.params.id);
+  await db.prepare("UPDATE users SET kyc_estado='verificado', kyc_nivel=2 WHERE id=?").run(req.params.id);
 
-  // Notificar al usuario
-  const { randomUUID } = require('crypto');
-  db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje) VALUES (?,?,'exito','KYC aprobado','Tu identidad ha sido verificada. Ahora tienes límites ampliados.')`).run(randomUUID(), req.params.id);
+  await db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje) VALUES (?,?,'exito','KYC aprobado','Tu identidad ha sido verificada. Ahora tienes límites ampliados.')`).run(randomUUID(), req.params.id);
 
   email.enviarPlantilla(req.params.id, 'kyc_aprobado');
   audit.registrar(req, { accion: 'aprobar_kyc', entidad: 'usuario', entidad_id: req.params.id });
   res.json({ ok: true });
 }
 
-function rechazarKYC(req, res) {
-  const user = db.prepare("SELECT id, kyc_estado FROM users WHERE id=? AND is_admin=0").get(req.params.id);
+async function rechazarKYC(req, res) {
+  const user = await db.prepare("SELECT id, kyc_estado FROM users WHERE id=? AND is_admin=0").get(req.params.id);
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
 
   const motivo = req.body.motivo || 'No se pudo verificar la información proporcionada.';
-  db.prepare("UPDATE users SET kyc_estado='rechazado' WHERE id=?").run(req.params.id);
+  await db.prepare("UPDATE users SET kyc_estado='rechazado' WHERE id=?").run(req.params.id);
 
-  const { randomUUID } = require('crypto');
-  db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje) VALUES (?,?,'error','KYC rechazado',?)`).run(randomUUID(), req.params.id, `Tu verificación fue rechazada: ${motivo}`);
+  await db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje) VALUES (?,?,'error','KYC rechazado',?)`).run(randomUUID(), req.params.id, `Tu verificación fue rechazada: ${motivo}`);
 
   email.enviarPlantilla(req.params.id, 'kyc_rechazado', motivo);
   audit.registrar(req, { accion: 'rechazar_kyc', entidad: 'usuario', entidad_id: req.params.id, detalle: { motivo } });
@@ -115,14 +113,14 @@ function filtrosTransferencias(q) {
 }
 
 // ── Transferencias (vista admin) ───────────────────────────────────────────
-function listarTransferencias(req, res) {
+async function listarTransferencias(req, res) {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = 25;
   const offset = (page - 1) * limit;
 
   const { where, params } = filtrosTransferencias(req.query);
-  const total = db.prepare(`SELECT COUNT(*) as n FROM transferencias t ${where}`).get(...params).n;
-  const rows = db.prepare(`
+  const total = (await db.prepare(`SELECT COUNT(*) as n FROM transferencias t ${where}`).get(...params)).n;
+  const rows = await db.prepare(`
     SELECT t.id, t.referencia, t.monto_clp, t.monto_ves, t.monto_usd,
            t.comision_clp, t.tasa_usd_clp, t.tasa_usd_ves,
            t.estado, t.notas_admin, t.created_at, t.updated_at,
@@ -141,35 +139,34 @@ function listarTransferencias(req, res) {
   res.json({ rows, total, pages: Math.ceil(total / limit), page });
 }
 
-function actualizarTransferencia(req, res) {
+async function actualizarTransferencia(req, res) {
   const { estado, notas_admin } = req.body;
   const estados = ['pendiente', 'procesando', 'completada', 'fallida', 'cancelada'];
   if (estado && !estados.includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
 
-  const t = db.prepare('SELECT id, user_id, estado FROM transferencias WHERE id=?').get(req.params.id);
+  const t = await db.prepare('SELECT id, user_id, estado FROM transferencias WHERE id=?').get(req.params.id);
   if (!t) return res.status(404).json({ error: 'Transferencia no encontrada' });
 
   const updates = [];
   const vals = [];
   if (estado) { updates.push('estado=?'); vals.push(estado); }
   if (notas_admin !== undefined) { updates.push('notas_admin=?'); vals.push(notas_admin); }
-  updates.push("updated_at=CURRENT_TIMESTAMP");
+  updates.push('updated_at=CURRENT_TIMESTAMP');
   vals.push(req.params.id);
 
-  db.prepare(`UPDATE transferencias SET ${updates.join(',')} WHERE id=?`).run(...vals);
+  await db.prepare(`UPDATE transferencias SET ${updates.join(',')} WHERE id=?`).run(...vals);
 
   if (estado && estado !== t.estado) {
-    const { randomUUID } = require('crypto');
-    db.prepare('INSERT INTO transferencia_eventos (id,transferencia_id,estado,descripcion) VALUES (?,?,?,?)').run(
-      randomUUID(), t.id, estado, `Estado actualizado por administrador`
+    await db.prepare('INSERT INTO transferencia_eventos (id,transferencia_id,estado,descripcion) VALUES (?,?,?,?)').run(
+      randomUUID(), t.id, estado, 'Estado actualizado por administrador'
     );
 
     const mensajes = {
-      completada: `Tu transferencia ha sido completada exitosamente.`,
-      fallida: `Tu transferencia ha fallado. Por favor contáctanos para asistencia.`,
+      completada: 'Tu transferencia ha sido completada exitosamente.',
+      fallida: 'Tu transferencia ha fallado. Por favor contáctanos para asistencia.',
     };
     if (mensajes[estado]) {
-      db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje,meta) VALUES (?,?,?,?,?,?)`).run(
+      await db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje,meta) VALUES (?,?,?,?,?,?)`).run(
         randomUUID(), t.user_id,
         estado === 'completada' ? 'exito' : 'error',
         `Transferencia ${estado}`,
@@ -178,12 +175,9 @@ function actualizarTransferencia(req, res) {
       );
     }
     if (estado === 'completada') {
-      const full = db.prepare('SELECT id, referencia, monto_clp, monto_ves FROM transferencias WHERE id=?').get(t.id);
+      const full = await db.prepare('SELECT id, referencia, monto_clp, monto_ves FROM transferencias WHERE id=?').get(t.id);
       email.enviarPlantilla(t.user_id, 'transferencia_completada', full);
     }
-  }
-
-  if (estado && estado !== t.estado) {
     audit.registrar(req, { accion: 'cambiar_estado_transferencia', entidad: 'transferencia', entidad_id: t.id, detalle: { de: t.estado, a: estado } });
   }
 
@@ -194,14 +188,14 @@ function actualizarTransferencia(req, res) {
 async function getTasas(req, res) {
   try {
     const rates = await getRates();
-    const cache = db.prepare('SELECT * FROM tasas_cache ORDER BY id DESC LIMIT 1').get();
+    const cache = await db.prepare('SELECT * FROM tasas_cache ORDER BY id DESC LIMIT 1').get();
     res.json({ rates, cache });
   } catch (e) {
     res.status(502).json({ error: e.message });
   }
 }
 
-function setTasas(req, res) {
+async function setTasas(req, res) {
   const { usd_clp, usd_ves } = req.body;
   if (!usd_clp || !usd_ves || isNaN(usd_clp) || isNaN(usd_ves)) {
     return res.status(400).json({ error: 'Se requieren usd_clp y usd_ves numéricos' });
@@ -210,8 +204,8 @@ function setTasas(req, res) {
   if (usd_ves < 1 || usd_ves > 500000) return res.status(400).json({ error: 'usd_ves fuera de rango razonable' });
 
   // Borra cache anterior y guarda manual
-  db.prepare('DELETE FROM tasas_cache').run();
-  db.prepare('INSERT INTO tasas_cache (usd_clp, usd_ves, fuente, manual) VALUES (?,?,?,1)')
+  await db.prepare('DELETE FROM tasas_cache').run();
+  await db.prepare('INSERT INTO tasas_cache (usd_clp, usd_ves, fuente, manual) VALUES (?,?,?,1)')
     .run(parseFloat(usd_clp), parseFloat(usd_ves), 'manual_admin');
 
   clearCache();
@@ -219,37 +213,37 @@ function setTasas(req, res) {
   res.json({ ok: true, usd_clp: parseFloat(usd_clp), usd_ves: parseFloat(usd_ves) });
 }
 
-function resetTasas(req, res) {
-  db.prepare('DELETE FROM tasas_cache').run();
+async function resetTasas(req, res) {
+  await db.prepare('DELETE FROM tasas_cache').run();
   clearCache();
   res.json({ ok: true, mensaje: 'Cache borrada. Próxima consulta obtendrá tasas de la API.' });
 }
 
 // ── Configuración general ──────────────────────────────────────────────────
-function getConfigAdmin(req, res) {
+async function getConfigAdmin(req, res) {
   const claves = ['comision_pct', 'comision_minima_clp', 'mensaje_mantenimiento'];
   const config = {};
-  for (const c of claves) config[c] = getConfig(c);
+  for (const c of claves) config[c] = await getConfig(c);
   res.json(config);
 }
 
-function setConfigAdmin(req, res) {
+async function setConfigAdmin(req, res) {
   const { comision_pct, comision_minima_clp, mensaje_mantenimiento } = req.body;
 
   if (comision_pct !== undefined) {
     const v = parseFloat(comision_pct);
     if (isNaN(v) || v < 0 || v > 20) return res.status(400).json({ error: 'La comisión debe estar entre 0% y 20%' });
-    setConfig('comision_pct', v);
+    await setConfig('comision_pct', v);
   }
 
   if (comision_minima_clp !== undefined) {
     const v = parseFloat(comision_minima_clp);
     if (isNaN(v) || v < 0) return res.status(400).json({ error: 'La comisión mínima no puede ser negativa' });
-    setConfig('comision_minima_clp', v);
+    await setConfig('comision_minima_clp', v);
   }
 
   if (mensaje_mantenimiento !== undefined) {
-    setConfig('mensaje_mantenimiento', String(mensaje_mantenimiento).slice(0, 300));
+    await setConfig('mensaje_mantenimiento', String(mensaje_mantenimiento).slice(0, 300));
   }
 
   audit.registrar(req, { accion: 'actualizar_configuracion', entidad: 'configuracion', detalle: req.body });
@@ -257,9 +251,9 @@ function setConfigAdmin(req, res) {
 }
 
 // ── Registro de auditoría ──────────────────────────────────────────────────
-function listarLog(req, res) {
+async function listarLog(req, res) {
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  res.json(audit.listar({
+  res.json(await audit.listar({
     page,
     accion: req.query.accion || null,
     desde: req.query.desde || null,
@@ -280,8 +274,8 @@ function toCSV(headers, rows) {
   return '﻿' + lines.join('\r\n'); // BOM para Excel
 }
 
-function exportarUsuarios(req, res) {
-  const rows = db.prepare(`
+async function exportarUsuarios(req, res) {
+  const rows = await db.prepare(`
     SELECT nombre, email, rut, telefono, kyc_estado, kyc_nivel, ciudad, created_at,
            (SELECT COUNT(*) FROM transferencias WHERE user_id=users.id) as num_trans,
            (SELECT COALESCE(SUM(monto_clp),0) FROM transferencias WHERE user_id=users.id AND estado='completada') as vol_total
@@ -297,9 +291,9 @@ function exportarUsuarios(req, res) {
   res.send(toCSV(headers, data));
 }
 
-function exportarTransferencias(req, res) {
+async function exportarTransferencias(req, res) {
   const { where, params } = filtrosTransferencias(req.query);
-  const rows = db.prepare(`
+  const rows = await db.prepare(`
     SELECT t.referencia, u.nombre as usuario, u.rut, t.monto_clp, t.comision_clp, t.monto_usd, t.monto_ves,
            t.tasa_usd_clp, t.tasa_usd_ves, t.estado, d.nombre as destinatario, d.tipo as tipo_destino, t.created_at
     FROM transferencias t

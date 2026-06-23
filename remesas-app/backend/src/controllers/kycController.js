@@ -3,8 +3,8 @@ const { esMayorDeEdad } = require('../utils/validators');
 const { getResumen, getLimites } = require('../services/limitsService');
 const notif = require('../services/notificationService');
 
-function estado(req, res) {
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+async function estado(req, res) {
+  const user = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
   res.json({
     kyc_estado: user.kyc_estado,
     kyc_nivel: user.kyc_nivel,
@@ -13,13 +13,13 @@ function estado(req, res) {
     ciudad: user.ciudad,
     tipo_documento: user.tipo_documento,
     numero_documento: user.numero_documento,
-    resumen: getResumen(user),
+    resumen: await getResumen(user),
     nivel_objetivo: { nivel: 2, ...getLimites(2) },
   });
 }
 
 // Enviar verificación. Simulación: pasa a 'en_revision' y se auto-aprueba tras unos segundos.
-function enviar(req, res) {
+async function enviar(req, res) {
   const { fecha_nacimiento, direccion, ciudad, tipo_documento, numero_documento } = req.body;
 
   if (!fecha_nacimiento || !direccion || !ciudad || !tipo_documento || !numero_documento) {
@@ -29,12 +29,12 @@ function enviar(req, res) {
     return res.status(400).json({ error: 'Debes ser mayor de 18 años para usar el servicio' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+  const user = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
   if (user.kyc_estado === 'verificado') {
     return res.status(409).json({ error: 'Tu identidad ya está verificada' });
   }
 
-  db.prepare(`
+  await db.prepare(`
     UPDATE users SET kyc_estado='en_revision',
       fecha_nacimiento=?, direccion=?, ciudad=?, tipo_documento=?, numero_documento=?
     WHERE id=?
@@ -47,9 +47,9 @@ function enviar(req, res) {
   });
 
   // Simulación de revisión: aprobación automática tras 5s. En producción lo hace un equipo/servicio KYC.
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
-      db.prepare("UPDATE users SET kyc_estado='verificado', kyc_nivel=2 WHERE id=?").run(req.userId);
+      await db.prepare("UPDATE users SET kyc_estado='verificado', kyc_nivel=2 WHERE id=?").run(req.userId);
       notif.crear(req.userId, {
         tipo: 'kyc',
         titulo: '¡Identidad verificada! ✅',
@@ -58,7 +58,7 @@ function enviar(req, res) {
     } catch (e) { /* noop */ }
   }, 5000);
 
-  const actualizado = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+  const actualizado = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
   res.json({ kyc_estado: actualizado.kyc_estado, mensaje: 'Verificación enviada. Está en revisión.' });
 }
 

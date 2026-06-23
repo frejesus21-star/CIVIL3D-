@@ -11,27 +11,27 @@ function getLimites(nivel) {
 }
 
 // Uso acumulado del usuario (transferencias no fallidas/canceladas) en UTC
-function getUso(userId) {
-  const hoy = db.prepare(`
+async function getUso(userId) {
+  const hoy = (await db.prepare(`
     SELECT COALESCE(SUM(monto_clp),0) AS total
     FROM transferencias
     WHERE user_id = ? AND estado NOT IN ('fallida','cancelada')
       AND date(created_at) = date('now')
-  `).get(userId).total;
+  `).get(userId)).total;
 
-  const mes = db.prepare(`
+  const mes = (await db.prepare(`
     SELECT COALESCE(SUM(monto_clp),0) AS total
     FROM transferencias
     WHERE user_id = ? AND estado NOT IN ('fallida','cancelada')
       AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
-  `).get(userId).total;
+  `).get(userId)).total;
 
   return { hoy, mes };
 }
 
-function getResumen(user) {
+async function getResumen(user) {
   const limites = getLimites(user.kyc_nivel);
-  const uso = getUso(user.id);
+  const uso = await getUso(user.id);
   return {
     nivel: user.kyc_nivel,
     nivel_nombre: limites.nombre,
@@ -44,9 +44,9 @@ function getResumen(user) {
 }
 
 // Valida si el usuario puede enviar `monto`. Devuelve { ok, error }
-function validarEnvio(user, monto) {
+async function validarEnvio(user, monto) {
   const limites = getLimites(user.kyc_nivel);
-  const uso = getUso(user.id);
+  const uso = await getUso(user.id);
 
   if (monto > limites.por_transaccion) {
     return { ok: false, error: `El máximo por transacción en tu nivel (${limites.nombre}) es $${limites.por_transaccion.toLocaleString('es-CL')} CLP. Verifica tu identidad para aumentarlo.` };

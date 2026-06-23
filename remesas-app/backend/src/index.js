@@ -1,6 +1,8 @@
 require('dotenv').config();
+require('express-async-errors');
 const express = require('express');
 const cors = require('cors');
+const db = require('./config/database');
 const routes = require('./routes');
 const rateLimiter = require('./middleware/rateLimiter');
 
@@ -39,4 +41,6 @@ app.use((err, req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Remesas API corriendo en puerto ${PORT}`));
+db.init()
+  .then(() => app.listen(PORT, () => console.log(`Remesas API corriendo en puerto ${PORT} (BD: ${db.driver})`)))
+  .catch(err => { console.error('No se pudo inicializar la base de datos:', err); process.exit(1); });
