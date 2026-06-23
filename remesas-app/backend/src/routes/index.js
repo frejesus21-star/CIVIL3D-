@@ -8,6 +8,7 @@ const transCtrl = require('../controllers/transferenciasController');
 const kycCtrl = require('../controllers/kycController');
 const notifCtrl = require('../controllers/notificacionesController');
 const adminCtrl = require('../controllers/adminController');
+const twoFactorCtrl = require('../controllers/twoFactorController');
 const { getRates } = require('../services/exchangeService');
 
 // Auth
@@ -17,6 +18,12 @@ router.get('/auth/me', auth, authCtrl.me);
 router.patch('/auth/perfil', auth, authCtrl.actualizarPerfil);
 router.post('/auth/cambiar-password', auth, authCtrl.cambiarPassword);
 router.get('/auth/stats', auth, authCtrl.stats);
+
+// 2FA (autenticación en dos pasos)
+router.get('/auth/2fa', auth, twoFactorCtrl.estado);
+router.post('/auth/2fa/setup', auth, twoFactorCtrl.setup);
+router.post('/auth/2fa/activar', auth, twoFactorCtrl.activar);
+router.post('/auth/2fa/desactivar', auth, twoFactorCtrl.desactivar);
 
 // KYC / Verificación
 router.get('/kyc', auth, kycCtrl.estado);

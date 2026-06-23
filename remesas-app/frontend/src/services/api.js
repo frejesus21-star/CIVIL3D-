@@ -20,9 +20,10 @@ async function request(path, options = {}) {
   const res = await fetch(BASE + path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data.error || `Error ${res.status}`);
+    const err = new Error(data.error || data.mensaje || `Error ${res.status}`);
     err.codigo = data.codigo;
     err.status = res.status;
+    err.requiere_2fa = data.requiere_2fa;
     throw err;
   }
   return data;
@@ -56,6 +57,12 @@ export const api = {
   actualizarPerfil: (body) => request('/auth/perfil', { method: 'PATCH', body: JSON.stringify(body) }),
   cambiarPassword: (body) => request('/auth/cambiar-password', { method: 'POST', body: JSON.stringify(body) }),
   stats: () => request('/auth/stats'),
+
+  // 2FA
+  estado2FA: () => request('/auth/2fa'),
+  setup2FA: () => request('/auth/2fa/setup', { method: 'POST' }),
+  activar2FA: (codigo) => request('/auth/2fa/activar', { method: 'POST', body: JSON.stringify({ codigo }) }),
+  desactivar2FA: (password) => request('/auth/2fa/desactivar', { method: 'POST', body: JSON.stringify({ password }) }),
 
   // KYC
   kyc: () => request('/kyc'),

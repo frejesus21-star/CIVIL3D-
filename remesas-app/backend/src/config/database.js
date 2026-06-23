@@ -138,6 +138,8 @@ ensureColumn('destinatarios', 'favorito', 'favorito INTEGER NOT NULL DEFAULT 0')
 ensureColumn('users', 'is_admin', 'is_admin INTEGER NOT NULL DEFAULT 0');
 ensureColumn('transferencias', 'notas_admin', 'notas_admin TEXT');
 ensureColumn('tasas_cache', 'manual', 'manual INTEGER NOT NULL DEFAULT 0');
+ensureColumn('users', 'totp_secret', 'totp_secret TEXT');
+ensureColumn('users', 'totp_enabled', 'totp_enabled INTEGER NOT NULL DEFAULT 0');
 
 // Valores por defecto de configuración
 db.prepare(`

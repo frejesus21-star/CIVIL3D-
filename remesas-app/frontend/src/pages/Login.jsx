@@ -6,6 +6,8 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [codigo2fa, setCodigo2fa] = useState('');
+  const [requiere2fa, setRequiere2fa] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -14,10 +16,16 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(form.email, form.password);
+      await login(form.email, form.password, requiere2fa ? codigo2fa : undefined);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      if (err.requiere_2fa) {
+        setRequiere2fa(true);
+        // Solo mostramos error si ya habían ingresado un código (código inválido)
+        setError(codigo2fa ? err.message : '');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -45,8 +53,17 @@ export default function Login() {
               <input className="input" type="password" required
                 value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
             </div>
+            {requiere2fa && (
+              <div>
+                <label className="label">Código de verificación</label>
+                <input className="input tracking-[0.4em] text-center text-lg" type="text" inputMode="numeric"
+                  maxLength={6} placeholder="000000" autoFocus required
+                  value={codigo2fa} onChange={e => setCodigo2fa(e.target.value.replace(/\D/g, ''))} />
+                <p className="text-xs text-gray-400 mt-1">Ingresa el código de 6 dígitos de tu app de autenticación</p>
+              </div>
+            )}
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? 'Ingresando...' : 'Ingresar'}
+              {loading ? 'Ingresando...' : (requiere2fa ? 'Verificar' : 'Ingresar')}
             </button>
           </form>
           <p className="text-center text-sm text-gray-500 mt-5">

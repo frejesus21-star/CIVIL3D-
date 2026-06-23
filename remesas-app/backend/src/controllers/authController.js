@@ -5,6 +5,7 @@ const db = require('../config/database');
 const { validarRut, limpiarRut, validarEmail } = require('../utils/validators');
 const { getResumen } = require('../services/limitsService');
 const notif = require('../services/notificationService');
+const totp = require('../utils/totp');
 
 function signToken(userId) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -16,6 +17,7 @@ function publicUser(u) {
     kyc_estado: u.kyc_estado, kyc_nivel: u.kyc_nivel,
     fecha_nacimiento: u.fecha_nacimiento, direccion: u.direccion, ciudad: u.ciudad,
     is_admin: u.is_admin === 1,
+    totp_enabled: u.totp_enabled === 1,
   };
 }
 
@@ -48,7 +50,7 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
-  const { email, password } = req.body;
+  const { email, password, codigo_2fa } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email y contraseña requeridos' });
 
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
@@ -56,6 +58,16 @@ async function login(req, res) {
 
   const valid = await bcrypt.compare(password, user.password_hash);
   if (!valid) return res.status(401).json({ error: 'Credenciales incorrectas' });
+
+  // Segundo factor: si está activado, exige un código TOTP válido
+  if (user.totp_enabled) {
+    if (!codigo_2fa) {
+      return res.status(401).json({ requiere_2fa: true, mensaje: 'Ingresa el código de tu app de autenticación' });
+    }
+    if (!totp.verificar(user.totp_secret, codigo_2fa)) {
+      return res.status(401).json({ requiere_2fa: true, error: 'Código de verificación incorrecto' });
+    }
+  }
 
   res.json({ token: signToken(user.id), user: publicUser(user) });
 }

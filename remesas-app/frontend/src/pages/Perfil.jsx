@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatRut } from '../utils/format';
+import TwoFactorSettings from '../components/TwoFactorSettings';
 
 export default function Perfil() {
   const { user, setUser, logout } = useAuth();
@@ -114,6 +115,9 @@ export default function Perfil() {
         </div>
         <button type="submit" disabled={loadingPwd} className="btn-secondary w-full">{loadingPwd ? 'Cambiando...' : 'Cambiar contraseña'}</button>
       </form>
+
+      {/* Seguridad: 2FA */}
+      <TwoFactorSettings />
 
       <button onClick={handleLogout} className="w-full py-3 text-red-600 font-medium hover:bg-red-50 rounded-xl transition-colors">
         Cerrar sesión
