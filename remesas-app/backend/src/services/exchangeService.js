@@ -17,14 +17,25 @@ const FALLBACK_USD_CLP = parseFloat(process.env.FALLBACK_USD_CLP || '950');
 const FALLBACK_USD_VES = parseFloat(process.env.FALLBACK_USD_VES || '45');
 
 async function fetchParaleloDolar() {
-  // Monitor Dólar Venezuela API (promedio)
-  const res = await fetch('https://ve.dolarapi.com/v1/dolares/promedio', {
+  // dolarapi.com — monitor paralelo, campo promedio (precio medio compra/venta)
+  const res = await fetch('https://ve.dolarapi.com/v1/dolares/paralelo', {
     headers: { 'Accept': 'application/json' },
     timeout: 8000,
   });
   if (!res.ok) throw new Error(`dolarapi error: ${res.status}`);
   const data = await res.json();
   return parseFloat(data.promedio);
+}
+
+async function fetchBcvDolar() {
+  // bcvapi.tech — tasa oficial BCV
+  const res = await fetch('https://www.bcvapi.tech/', {
+    headers: { 'Accept': 'application/json' },
+    timeout: 8000,
+  });
+  if (!res.ok) throw new Error(`bcvapi error: ${res.status}`);
+  const data = await res.json();
+  return parseFloat(data.USD);
 }
 
 async function fetchUsdClp() {
@@ -46,14 +57,24 @@ async function getRates() {
   }
 
   try {
-    const [usd_ves, usd_clp] = await Promise.all([fetchParaleloDolar(), fetchUsdClp()]);
+    // Intentar paralelo (dolarapi), si falla usar BCV oficial
+    let usd_ves, fuente_ves;
+    try {
+      usd_ves = await fetchParaleloDolar();
+      fuente_ves = 'dolarapi(paralelo)';
+    } catch {
+      usd_ves = await fetchBcvDolar();
+      fuente_ves = 'bcvapi(oficial)';
+    }
+    const usd_clp = await fetchUsdClp();
+    const fuente = `${fuente_ves}+openexchange`;
 
     await db.prepare(`
       INSERT INTO tasas_cache (usd_clp, usd_ves, fuente, updated_at)
-      VALUES (?, ?, 'dolarapi+openexchange', CURRENT_TIMESTAMP)
-    `).run(usd_clp, usd_ves);
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(usd_clp, usd_ves, fuente);
 
-    return { usd_clp, usd_ves, fuente: 'dolarapi+openexchange', cached: false };
+    return { usd_clp, usd_ves, fuente, cached: false };
   } catch (err) {
     // 1º fallback: caché aunque esté vencido
     if (cached) {
