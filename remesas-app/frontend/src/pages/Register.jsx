@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatRut, validarRut } from '../utils/format';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Register() {
   const { register } = useAuth();
@@ -61,11 +62,11 @@ export default function Register() {
             </div>
             <div>
               <label className="label">Contraseña</label>
-              <input className="input" type="password" required minLength={8} value={form.password} onChange={e => setField('password', e.target.value)} />
+              <PasswordInput required minLength={8} value={form.password} onChange={e => setField('password', e.target.value)} />
             </div>
             <div>
               <label className="label">Confirmar contraseña</label>
-              <input className="input" type="password" required value={form.confirm} onChange={e => setField('confirm', e.target.value)} />
+              <PasswordInput required value={form.confirm} onChange={e => setField('confirm', e.target.value)} />
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? 'Creando cuenta...' : 'Crear cuenta'}

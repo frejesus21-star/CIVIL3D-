@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatRut } from '../utils/format';
 import TwoFactorSettings from '../components/TwoFactorSettings';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Perfil() {
   const { user, setUser, logout } = useAuth();
@@ -134,15 +135,15 @@ export default function Perfil() {
         <Msg m={msgPwd} />
         <div>
           <label className="label">Contraseña actual</label>
-          <input className="input" type="password" required value={pwd.password_actual} onChange={e => setPwd({ ...pwd, password_actual: e.target.value })} />
+          <PasswordInput required value={pwd.password_actual} onChange={e => setPwd({ ...pwd, password_actual: e.target.value })} />
         </div>
         <div>
           <label className="label">Nueva contraseña</label>
-          <input className="input" type="password" required minLength={8} value={pwd.password_nueva} onChange={e => setPwd({ ...pwd, password_nueva: e.target.value })} />
+          <PasswordInput required minLength={8} value={pwd.password_nueva} onChange={e => setPwd({ ...pwd, password_nueva: e.target.value })} />
         </div>
         <div>
           <label className="label">Confirmar nueva contraseña</label>
-          <input className="input" type="password" required value={pwd.confirm} onChange={e => setPwd({ ...pwd, confirm: e.target.value })} />
+          <PasswordInput required value={pwd.confirm} onChange={e => setPwd({ ...pwd, confirm: e.target.value })} />
         </div>
         <button type="submit" disabled={loadingPwd} className="btn-secondary w-full">{loadingPwd ? 'Cambiando...' : 'Cambiar contraseña'}</button>
       </form>

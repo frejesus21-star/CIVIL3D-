@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import PasswordInput from '../components/PasswordInput';
 
 export default function RestablecerPassword() {
   const [params] = useSearchParams();
@@ -52,12 +53,12 @@ export default function RestablecerPassword() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="label">Nueva contraseña</label>
-                  <input className="input" type="password" required minLength={8} autoFocus
+                  <PasswordInput required minLength={8} autoFocus
                     value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
                 </div>
                 <div>
                   <label className="label">Confirmar contraseña</label>
-                  <input className="input" type="password" required
+                  <PasswordInput required
                     value={form.confirm} onChange={e => setForm({ ...form, confirm: e.target.value })} />
                 </div>
                 <button type="submit" disabled={loading} className="btn-primary w-full">

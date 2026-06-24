@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PasswordInput from '../components/PasswordInput';
 
 export default function Login() {
   const { login } = useAuth();
@@ -50,7 +51,7 @@ export default function Login() {
             </div>
             <div>
               <label className="label">Contraseña</label>
-              <input className="input" type="password" required
+              <PasswordInput required
                 value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
             </div>
             {requiere2fa && (
