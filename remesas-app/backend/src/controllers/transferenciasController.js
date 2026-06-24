@@ -206,25 +206,13 @@ async function iniciarPago(req, res) {
 
 // Webhook de Khipu — confirma el pago y actualiza la transferencia
 async function webhookKhipu(req, res) {
-  const params = req.body;
+  const body = req.body;
+  const { transaction_id: transId, payment_id: paymentId } = body;
+  if (!transId || !paymentId) return res.status(400).json({ error: 'Parámetros faltantes' });
 
-  // Verificar firma para asegurar que viene de Khipu
-  if (!khipu.verificarFirmaWebhook(params)) {
-    return res.status(401).json({ error: 'Firma inválida' });
-  }
-
-  const { transaction_id: transId, payment_id: paymentId, notification_token } = params;
-  if (!transId) return res.status(400).json({ error: 'Sin transaction_id' });
-
-  // Verificar el pago directamente con la API de Khipu para evitar ataques replay
-  let pagoKhipu;
-  try {
-    pagoKhipu = await khipu.verificarPago(paymentId);
-  } catch (err) {
-    return res.status(502).json({ error: err.message });
-  }
-
-  if (pagoKhipu.status !== 'done') return res.status(200).json({ ok: false, status: pagoKhipu.status });
+  // Verificar el pago directamente con la API de Khipu
+  const pagado = await khipu.verificarWebhook(body);
+  if (!pagado) return res.status(200).json({ ok: false, info: 'pago no confirmado' });
 
   const t = await db.prepare('SELECT * FROM transferencias WHERE id=?').get(transId);
   if (!t) return res.status(404).json({ error: 'Transferencia no encontrada' });
