@@ -1,11 +1,2 @@
-[phases.setup]
-nixPkgs = ["nodejs_20"]
-
-[phases.build]
-cmds = [
-  "cd remesas-app/backend && npm install",
-  "cd remesas-app/frontend && npm install && npm run build"
-]
-
 [start]
-cmd = "cd remesas-app/backend && node src/index.js"
+cmd = "npm start"
