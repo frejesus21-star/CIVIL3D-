@@ -7,11 +7,13 @@ function fmtVes(n) { return new Intl.NumberFormat('es-VE').format(Math.round(n))
 
 const estadoColor = {
   pendiente: 'bg-yellow-100 text-yellow-700',
+  pagado: 'bg-purple-100 text-purple-700',
   procesando: 'bg-blue-100 text-blue-700',
   completada: 'bg-green-100 text-green-700',
   fallida: 'bg-red-100 text-red-700',
+  cancelada: 'bg-gray-100 text-gray-500',
 };
-const estadoIcon = { pendiente: '⏳', procesando: '🔄', completada: '✅', fallida: '❌' };
+const estadoIcon = { pendiente: '⏳', pagado: '💳', procesando: '🔄', completada: '✅', fallida: '❌', cancelada: '🚫' };
 
 export default function Historial() {
   const [data, setData] = useState({ rows: [], total: 0, pages: 1 });

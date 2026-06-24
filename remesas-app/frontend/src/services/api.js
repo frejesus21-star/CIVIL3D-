@@ -102,6 +102,7 @@ export const api = {
   crearTransferencia: (body) => request('/transferencias', { method: 'POST', body: JSON.stringify(body) }),
   transferencia: (id) => request(`/transferencias/${id}`),
   cancelarTransferencia: (id) => request(`/transferencias/${id}/cancelar`, { method: 'POST' }),
+  iniciarPagoKhipu: (id) => request(`/transferencias/${id}/iniciar-pago`, { method: 'POST' }),
 
   // Admin
   adminStats: () => request('/admin/stats'),

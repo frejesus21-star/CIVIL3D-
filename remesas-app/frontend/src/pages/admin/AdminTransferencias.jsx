@@ -3,9 +3,10 @@ import AdminLayout from './AdminLayout';
 import { api } from '../../services/api';
 import { fmtCLP, fmtFechaHora } from '../../utils/format';
 
-const ESTADOS = ['', 'pendiente', 'procesando', 'completada', 'fallida', 'cancelada'];
+const ESTADOS = ['', 'pendiente', 'pagado', 'procesando', 'completada', 'fallida', 'cancelada'];
 const ESTADO_COLOR = {
   pendiente: 'bg-yellow-100 text-yellow-700',
+  pagado: 'bg-purple-100 text-purple-700',
   procesando: 'bg-blue-100 text-blue-700',
   completada: 'bg-green-100 text-green-700',
   fallida: 'bg-red-100 text-red-600',

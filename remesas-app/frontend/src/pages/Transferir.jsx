@@ -27,6 +27,7 @@ export default function Transferir() {
   const [errorLimite, setErrorLimite] = useState(false);
   const [err2fa, setErr2fa] = useState(false);
   const [exito, setExito] = useState(null);
+  const [pagando, setPagando] = useState(false);
   const debounceRef = useRef(null);
 
   // Guardar estado antes de navegar a otra página
@@ -101,6 +102,18 @@ export default function Transferir() {
     }
   }
 
+  async function pagarConKhipu() {
+    setPagando(true);
+    try {
+      const data = await api.iniciarPagoKhipu(exito.id);
+      // Redirigir al flujo de pago de Khipu (abre en la misma pestaña)
+      window.location.href = data.payment_url;
+    } catch (err) {
+      alert('Error al iniciar pago con Khipu: ' + err.message);
+      setPagando(false);
+    }
+  }
+
   if (exito) {
     return (
       <div className="max-w-md mx-auto space-y-5">
@@ -108,7 +121,7 @@ export default function Transferir() {
           <div className="text-center">
             <div className="text-5xl mb-2">📋</div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">¡Orden registrada!</h2>
-            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Ahora debes realizar la transferencia bancaria</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Elige cómo quieres pagar</p>
           </div>
           <div className="bg-brand-50 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -116,7 +129,7 @@ export default function Transferir() {
               <span className="font-mono font-bold text-brand-700">{exito.referencia}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Monto a transferir</span>
+              <span className="text-gray-500">Monto a pagar</span>
               <span className="font-semibold">${fmtCLP(exito.monto_clp)} CLP</span>
             </div>
             <div className="flex justify-between text-sm">
@@ -124,18 +137,41 @@ export default function Transferir() {
               <span className="font-semibold text-brand-600">{fmtVES(exito.monto_ves)} Bs.</span>
             </div>
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-            <p className="font-semibold text-amber-800 text-sm">Pasos para completar tu envío:</p>
-            <ol className="text-sm text-amber-700 space-y-1 list-decimal list-inside">
-              <li>Transfiere <strong>${fmtCLP(exito.monto_clp)} CLP</strong> a nuestra cuenta bancaria</li>
-              <li>Usa como referencia: <strong className="font-mono">{exito.referencia}</strong></li>
-              <li>Una vez recibido el pago, procesamos tu envío a Venezuela</li>
-            </ol>
-            <p className="text-xs text-amber-600 mt-2">Recibirás una notificación cuando el pago sea confirmado y el dinero entregado.</p>
-          </div>
+
+          {/* Opción 1: Pagar con Khipu (recomendado) */}
+          <button onClick={pagarConKhipu} disabled={pagando}
+            className="w-full py-3 px-4 rounded-xl bg-[#6b2d8b] hover:bg-[#5a2475] text-white font-semibold flex items-center justify-center gap-3 transition-colors disabled:opacity-60">
+            {pagando ? 'Redirigiendo...' : (
+              <>
+                <span className="text-2xl">💳</span>
+                <div className="text-left">
+                  <p className="text-sm font-bold">Pagar con Khipu</p>
+                  <p className="text-xs opacity-80">Paga desde tu banco en línea, al instante</p>
+                </div>
+              </>
+            )}
+          </button>
+
+          {/* Opción 2: Transferencia manual */}
+          <details className="group">
+            <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2 select-none">
+              <span className="group-open:hidden">▶</span>
+              <span className="hidden group-open:inline">▼</span>
+              También puedes transferir manualmente
+            </summary>
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+              <p className="font-semibold text-amber-800 text-sm">Transferencia bancaria manual:</p>
+              <ol className="text-sm text-amber-700 space-y-1 list-decimal list-inside">
+                <li>Transfiere <strong>${fmtCLP(exito.monto_clp)} CLP</strong> a nuestra cuenta bancaria</li>
+                <li>Usa como referencia: <strong className="font-mono">{exito.referencia}</strong></li>
+                <li>Confirmaremos manualmente y procesamos tu envío</li>
+              </ol>
+            </div>
+          </details>
+
           <div className="flex gap-3">
             <button className="btn-secondary flex-1" onClick={() => navigate(`/historial/${exito.id}`)}>Ver seguimiento</button>
-            <button className="btn-primary flex-1" onClick={() => { setExito(null); setPaso(0); setValor(''); setCotizacion(null); setCuentaId(''); setDestId(''); }}>Nueva transferencia</button>
+            <button className="btn-secondary flex-1" onClick={() => { setExito(null); setPaso(0); setValor(''); setCotizacion(null); setCuentaId(''); setDestId(''); }}>Nueva transferencia</button>
           </div>
         </div>
       </div>

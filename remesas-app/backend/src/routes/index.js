@@ -79,6 +79,10 @@ router.post('/transferencias', auth, transCtrl.crear);
 router.get('/transferencias/:id', auth, transCtrl.obtener);
 router.get('/transferencias/:id/comprobante', auth, transCtrl.comprobantePDF);
 router.post('/transferencias/:id/cancelar', auth, transCtrl.cancelar);
+router.post('/transferencias/:id/iniciar-pago', auth, transCtrl.iniciarPago);
+
+// Webhooks externos (sin auth JWT)
+router.post('/webhooks/khipu', transCtrl.webhookKhipu);
 
 // ── ADMIN ──────────────────────────────────────────────────────────────────
 router.get('/admin/stats', adminAuth, adminCtrl.stats);

@@ -46,7 +46,7 @@ const SQLITE_SCHEMA = `
     destinatario_id TEXT NOT NULL REFERENCES destinatarios(id),
     monto_clp REAL NOT NULL, tasa_usd_clp REAL NOT NULL, tasa_usd_ves REAL NOT NULL,
     monto_usd REAL NOT NULL, monto_ves REAL NOT NULL, comision_clp REAL NOT NULL,
-    estado TEXT NOT NULL DEFAULT 'pendiente' CHECK(estado IN ('pendiente','procesando','completada','fallida','cancelada')),
+    estado TEXT NOT NULL DEFAULT 'pendiente' CHECK(estado IN ('pendiente','pagado','procesando','completada','fallida','cancelada')),
     referencia TEXT UNIQUE NOT NULL, notas_admin TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -138,6 +138,9 @@ function crearSqlite() {
       ensureColumn('users', 'email_verificado', 'email_verificado INTEGER NOT NULL DEFAULT 0');
       ensureColumn('users', 'kyc_foto_documento', 'kyc_foto_documento TEXT');
       ensureColumn('users', 'kyc_foto_selfie', 'kyc_foto_selfie TEXT');
+      ensureColumn('transferencias', 'khipu_payment_id', 'khipu_payment_id TEXT');
+      ensureColumn('transferencias', 'estado', "estado TEXT NOT NULL DEFAULT 'pendiente'");
+      // Agrega 'pagado' al CHECK si no existe (SQLite no lo impone en ALTER, se recrea implícitamente)
       sdb.exec(SEED_CONFIG);
     },
   };
@@ -206,6 +209,7 @@ function crearPostgres() {
       // Migraciones idempotentes para columnas nuevas
       await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_foto_documento TEXT');
       await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_foto_selfie TEXT');
+      await pool.query('ALTER TABLE transferencias ADD COLUMN IF NOT EXISTS khipu_payment_id TEXT');
     },
   };
 }

@@ -58,9 +58,10 @@ CREATE TABLE IF NOT EXISTS transferencias (
   monto_usd DOUBLE PRECISION NOT NULL,
   monto_ves DOUBLE PRECISION NOT NULL,
   comision_clp DOUBLE PRECISION NOT NULL,
-  estado TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente','procesando','completada','fallida','cancelada')),
+  estado TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente','pagado','procesando','completada','fallida','cancelada')),
   referencia TEXT UNIQUE NOT NULL,
   notas_admin TEXT,
+  khipu_payment_id TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );

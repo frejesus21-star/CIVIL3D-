@@ -5,6 +5,7 @@ const { validarEnvio } = require('../services/limitsService');
 const notif = require('../services/notificationService');
 const comprobante = require('../services/comprobanteService');
 const email = require('../services/emailService');
+const khipu = require('../services/khipuService');
 
 function genReferencia() {
   return 'REM' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -169,4 +170,77 @@ async function cancelar(req, res) {
   res.json({ ok: true });
 }
 
-module.exports = { cotizar, crear, listar, obtener, cancelar, comprobantePDF };
+// Inicia un pago con Khipu para una transferencia pendiente
+async function iniciarPago(req, res) {
+  const t = await db.prepare(`
+    SELECT t.*, u.email, d.nombre as dest_nombre
+    FROM transferencias t
+    JOIN users u ON t.user_id = u.id
+    JOIN destinatarios d ON t.destinatario_id = d.id
+    WHERE t.id=? AND t.user_id=?
+  `).get(req.params.id, req.userId);
+  if (!t) return res.status(404).json({ error: 'Transferencia no encontrada' });
+  if (t.estado !== 'pendiente') return res.status(409).json({ error: 'Solo se pueden pagar transferencias pendientes' });
+
+  const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
+  try {
+    const pago = await khipu.crearPago({
+      monto: t.monto_clp,
+      asunto: `Remesa a ${t.dest_nombre} — Ref: ${t.referencia}`,
+      transactionId: t.id,
+      returnUrl: `${appUrl}/historial?ref=${t.referencia}&pago=ok`,
+      cancelUrl: `${appUrl}/historial?ref=${t.referencia}&pago=cancelado`,
+      notifyUrl: `${appUrl}/api/webhooks/khipu`,
+      email: t.email,
+    });
+
+    // Guarda el payment_id de Khipu en la transferencia
+    await db.prepare("UPDATE transferencias SET khipu_payment_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?")
+      .run(pago.payment_id, t.id);
+
+    res.json({ payment_url: pago.payment_url, simplified_transfer_url: pago.simplified_transfer_url });
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+}
+
+// Webhook de Khipu — confirma el pago y actualiza la transferencia
+async function webhookKhipu(req, res) {
+  const params = req.body;
+
+  // Verificar firma para asegurar que viene de Khipu
+  if (!khipu.verificarFirmaWebhook(params)) {
+    return res.status(401).json({ error: 'Firma inválida' });
+  }
+
+  const { transaction_id: transId, payment_id: paymentId, notification_token } = params;
+  if (!transId) return res.status(400).json({ error: 'Sin transaction_id' });
+
+  // Verificar el pago directamente con la API de Khipu para evitar ataques replay
+  let pagoKhipu;
+  try {
+    pagoKhipu = await khipu.verificarPago(paymentId);
+  } catch (err) {
+    return res.status(502).json({ error: err.message });
+  }
+
+  if (pagoKhipu.status !== 'done') return res.status(200).json({ ok: false, status: pagoKhipu.status });
+
+  const t = await db.prepare('SELECT * FROM transferencias WHERE id=?').get(transId);
+  if (!t) return res.status(404).json({ error: 'Transferencia no encontrada' });
+  if (t.estado !== 'pendiente') return res.status(200).json({ ok: true, info: 'ya procesada' });
+
+  await db.prepare("UPDATE transferencias SET estado='pagado', updated_at=CURRENT_TIMESTAMP WHERE id=?").run(t.id);
+  await registrarEvento(t.id, 'pagado', `Pago confirmado por Khipu — payment_id: ${paymentId}`);
+
+  notif.crear(t.user_id, {
+    tipo: 'transferencia',
+    titulo: '¡Pago recibido!',
+    mensaje: `Recibimos tu pago de $${t.monto_clp.toLocaleString('es-CL')} CLP. Estamos procesando el envío a Venezuela. Ref: ${t.referencia}`,
+    meta: { transferencia_id: t.id },
+  });
+
+  res.json({ ok: true });
+}
+
+module.exports = { cotizar, crear, listar, obtener, cancelar, comprobantePDF, iniciarPago, webhookKhipu };
