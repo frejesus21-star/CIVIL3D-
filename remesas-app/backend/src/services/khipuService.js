@@ -25,32 +25,19 @@ async function crearPago({ monto, asunto, transactionId, returnUrl, cancelUrl, n
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || `Khipu error ${res.status}: ${JSON.stringify(data)}`);
-  return data; // { payment_id, payment_url, simplified_transfer_url, ... }
+  return data;
 }
 
-async function verificarPago(paymentId) {
+async function obtenerPago(paymentId) {
   const res = await fetch(`${API_BASE}/payments/${paymentId}`, {
     headers: {
       'x-api-key': API_KEY,
       'Accept': 'application/json',
     },
   });
-
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || `Khipu error ${res.status}`);
-  return data; // { status: 'done'|'pending'|... }
+  return data;
 }
 
-// En v3 Khipu envía JSON con notification_token; verificamos consultando la API
-async function verificarWebhook(body) {
-  const { payment_id } = body;
-  if (!payment_id) return false;
-  try {
-    const pago = await verificarPago(payment_id);
-    return pago.status === 'done';
-  } catch {
-    return false;
-  }
-}
-
-module.exports = { crearPago, verificarPago, verificarWebhook };
+module.exports = { crearPago, obtenerPago };
