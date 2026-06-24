@@ -35,6 +35,15 @@ app.use('/api', routes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 
+// Servir frontend compilado en producción
+const path = require('path');
+const fs = require('fs');
+const frontendDist = path.join(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res) => res.sendFile(path.join(frontendDist, 'index.html')));
+}
+
 app.use((err, req, res, _next) => {
   console.error(err);
   res.status(500).json({ error: 'Error interno del servidor' });

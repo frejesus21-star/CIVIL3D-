@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "API para transferencias CLP → VES",
   "main": "src/index.js",
+  "engines": { "node": ">=22" },
   "scripts": {
     "start": "node src/index.js",
+    "build": "cd ../frontend && npm install && npm run build",
     "dev": "nodemon src/index.js",
     "test": "node --test test/*.test.js",
     "test:e2e": "bash test/e2e/run.sh",
