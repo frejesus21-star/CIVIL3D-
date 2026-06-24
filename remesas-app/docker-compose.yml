@@ -1,0 +1,26 @@
+# PostgreSQL para desarrollo/producción de RemesasVE.
+# Uso: docker compose up -d
+# Luego migrar datos existentes (opcional):
+#   cd backend && DATABASE_URL=postgres://remesas:remesas@localhost:5432/remesas \
+#     node scripts/migrate-to-postgres.js
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: remesas-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: remesas
+      POSTGRES_PASSWORD: remesas
+      POSTGRES_DB: remesas
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U remesas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

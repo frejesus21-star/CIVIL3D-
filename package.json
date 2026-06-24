@@ -1,0 +1,9 @@
+{
+  "name": "remesasve",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd remesas-app/backend && npm install && cd ../frontend && npm install && npm run build",
+    "start": "cd remesas-app/backend && node src/index.js"
+  },
+  "engines": { "node": ">=20" }
+}
