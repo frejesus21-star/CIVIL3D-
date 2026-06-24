@@ -207,15 +207,29 @@ async function iniciarPago(req, res) {
 // Webhook de Khipu — confirma el pago y actualiza la transferencia
 async function webhookKhipu(req, res) {
   const body = req.body;
-  const { transaction_id: transId, payment_id: paymentId } = body;
-  if (!transId || !paymentId) return res.status(400).json({ error: 'Parámetros faltantes' });
+  console.log('[Khipu webhook]', JSON.stringify(body));
+
+  // Khipu v3 puede enviar transaction_id como campo directo o dentro del objeto
+  const transId = body.transaction_id || body.transactionId;
+  const paymentId = body.payment_id || body.paymentId;
+
+  if (!paymentId) return res.status(400).json({ error: 'Sin payment_id' });
 
   // Verificar el pago directamente con la API de Khipu
-  const pagado = await khipu.verificarWebhook(body);
-  if (!pagado) return res.status(200).json({ ok: false, info: 'pago no confirmado' });
+  let pagado = false;
+  try {
+    pagado = await khipu.verificarWebhook(body);
+  } catch (err) {
+    console.error('[Khipu webhook] Error verificando pago:', err.message);
+    return res.status(502).json({ error: err.message });
+  }
 
-  const t = await db.prepare('SELECT * FROM transferencias WHERE id=?').get(transId);
-  if (!t) return res.status(404).json({ error: 'Transferencia no encontrada' });
+  if (!pagado) return res.status(200).json({ ok: false, info: 'pago no confirmado aún' });
+
+  // Buscar por transaction_id o por khipu_payment_id
+  let t = transId ? await db.prepare('SELECT * FROM transferencias WHERE id=?').get(transId) : null;
+  if (!t) t = await db.prepare('SELECT * FROM transferencias WHERE khipu_payment_id=?').get(paymentId);
+  if (!t) return res.status(404).json({ error: 'Transferencia no encontrada', transId, paymentId });
   if (t.estado !== 'pendiente') return res.status(200).json({ ok: true, info: 'ya procesada' });
 
   await db.prepare("UPDATE transferencias SET estado='pagado', updated_at=CURRENT_TIMESTAMP WHERE id=?").run(t.id);
