@@ -162,10 +162,35 @@ export default function AdminUsuarios() {
                 </div>
 
                 {detalle.kyc_estado === 'en_revision' && (
-                  <div className="flex gap-2 mb-4">
-                    <button onClick={() => aprobar(detalle.id)} className="btn-primary text-xs py-1.5 flex-1">✓ Aprobar</button>
-                    <button onClick={() => rechazar(detalle.id)} className="text-xs py-1.5 px-3 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 flex-1">✕ Rechazar</button>
-                  </div>
+                  <>
+                    {(detalle.kyc_foto_documento || detalle.kyc_foto_selfie) && (
+                      <div className="mb-4 space-y-3">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Documentos enviados</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          {detalle.kyc_foto_documento && (
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">Documento</p>
+                              <a href={detalle.kyc_foto_documento} target="_blank" rel="noreferrer">
+                                <img src={detalle.kyc_foto_documento} alt="documento" className="rounded-lg w-full h-28 object-cover border hover:opacity-90 cursor-zoom-in" />
+                              </a>
+                            </div>
+                          )}
+                          {detalle.kyc_foto_selfie && (
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">Selfie</p>
+                              <a href={detalle.kyc_foto_selfie} target="_blank" rel="noreferrer">
+                                <img src={detalle.kyc_foto_selfie} alt="selfie" className="rounded-lg w-full h-28 object-cover border hover:opacity-90 cursor-zoom-in" />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-2 mb-4">
+                      <button onClick={() => aprobar(detalle.id)} className="btn-primary text-xs py-1.5 flex-1">✓ Aprobar KYC</button>
+                      <button onClick={() => rechazar(detalle.id)} className="text-xs py-1.5 px-3 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 flex-1">✕ Rechazar</button>
+                    </div>
+                  </>
                 )}
 
                 {detalle.transferencias?.length > 0 && (

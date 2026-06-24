@@ -59,7 +59,8 @@ async function listarUsuarios(req, res) {
 async function getUsuario(req, res) {
   const user = await db.prepare(`
     SELECT id, nombre, email, rut, telefono, kyc_estado, kyc_nivel,
-           fecha_nacimiento, direccion, ciudad, tipo_documento, numero_documento, created_at
+           fecha_nacimiento, direccion, ciudad, tipo_documento, numero_documento,
+           kyc_foto_documento, kyc_foto_selfie, created_at
     FROM users WHERE id = ? AND is_admin = 0
   `).get(req.params.id);
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });

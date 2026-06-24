@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { validarCedulaVE, validarTelefonoPM } from '../utils/format';
 
 export default function Destinatarios() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const volverATransferir = location.state?.volver === 'destinatario';
   const [dest, setDest] = useState([]);
   const [bancos, setBancos] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(volverATransferir);
   const [form, setForm] = useState({ nombre: '', tipo: 'pago_movil', banco: '', numero_cuenta: '', cedula: '', telefono: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,8 +29,13 @@ export default function Destinatarios() {
     setError('');
     setLoading(true);
     try {
-      const nuevo = await api.crearDestinatario(form);
-      setDest(d => [nuevo, ...d].sort((a, b) => (b.favorito - a.favorito) || a.nombre.localeCompare(b.nombre)));
+      await api.crearDestinatario(form);
+      if (volverATransferir) {
+        navigate('/transferir', { state: { volver: 'destinatario' } });
+        return;
+      }
+      const lista = await api.destinatarios();
+      setDest(lista.sort((a, b) => (b.favorito - a.favorito) || a.nombre.localeCompare(b.nombre)));
       setShowForm(false);
       setForm({ nombre: '', tipo: 'pago_movil', banco: '', numero_cuenta: '', cedula: '', telefono: '' });
     } catch (err) {

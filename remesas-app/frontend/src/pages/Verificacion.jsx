@@ -15,7 +15,7 @@ export default function Verificacion() {
   const navigate = useNavigate();
   const { refresh } = useAuth();
   const [data, setData] = useState(null);
-  const [form, setForm] = useState({ fecha_nacimiento: '', direccion: '', ciudad: '', tipo_documento: 'Cédula de Identidad', numero_documento: '' });
+  const [form, setForm] = useState({ fecha_nacimiento: '', direccion: '', ciudad: '', tipo_documento: 'Cédula de Identidad', numero_documento: '', foto_documento: '', foto_selfie: '' });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   const pollRef = useRef(null);
@@ -53,9 +53,24 @@ export default function Verificacion() {
     }
   }, [data?.kyc_estado, refresh]);
 
+  function leerArchivo(campo) {
+    return (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { setError('La imagen no debe superar 5 MB'); return; }
+      const reader = new FileReader();
+      reader.onload = ev => setForm(f => ({ ...f, [campo]: ev.target.result }));
+      reader.readAsDataURL(file);
+    };
+  }
+
   async function enviar(e) {
     e.preventDefault();
     setError('');
+    if (!form.foto_documento || !form.foto_selfie) {
+      setError('Debes adjuntar la foto de tu documento y la selfie sosteniéndolo');
+      return;
+    }
     setEnviando(true);
     try {
       await api.enviarKyc(form);
@@ -142,6 +157,28 @@ export default function Verificacion() {
             <label className="label">Ciudad</label>
             <input className="input" required value={form.ciudad} onChange={e => setForm({ ...form, ciudad: e.target.value })} />
           </div>
+
+          <div className="border-t border-gray-100 pt-4 space-y-4">
+            <p className="font-semibold text-sm">Documentos requeridos</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Las imágenes se usan únicamente para verificar tu identidad y se almacenan de forma segura.</p>
+
+            <div>
+              <label className="label">Foto del documento (frente)</label>
+              <p className="text-xs text-gray-400 mb-2">Sube una foto clara de tu {form.tipo_documento} por el frente</p>
+              <input type="file" accept="image/*" capture="environment" onChange={leerArchivo('foto_documento')}
+                className="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
+              {form.foto_documento && <img src={form.foto_documento} alt="documento" className="mt-2 rounded-lg h-32 object-cover border" />}
+            </div>
+
+            <div>
+              <label className="label">Selfie sosteniendo el documento</label>
+              <p className="text-xs text-gray-400 mb-2">Tómate una foto sosteniendo tu {form.tipo_documento} junto a tu cara</p>
+              <input type="file" accept="image/*" capture="user" onChange={leerArchivo('foto_selfie')}
+                className="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100" />
+              {form.foto_selfie && <img src={form.foto_selfie} alt="selfie" className="mt-2 rounded-lg h-32 object-cover border" />}
+            </div>
+          </div>
+
           <button type="submit" disabled={enviando} className="btn-primary w-full">
             {enviando ? 'Enviando...' : 'Enviar verificación'}
           </button>

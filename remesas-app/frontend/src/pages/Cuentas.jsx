@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 
 const TIPOS = ['Cuenta Corriente', 'Cuenta Vista', 'Cuenta de Ahorro', 'Cuenta RUT'];
 
 export default function Cuentas() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const volverATransferir = location.state?.volver === 'cuenta';
   const [cuentas, setCuentas] = useState([]);
   const [bancos, setBancos] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(volverATransferir); // abrir form directamente si viene del flujo
   const [form, setForm] = useState({ banco: '', tipo_cuenta: '', numero_cuenta: '', titular: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,8 +25,13 @@ export default function Cuentas() {
     setError('');
     setLoading(true);
     try {
-      const nueva = await api.crearCuenta(form);
-      setCuentas(c => [nueva, ...c]);
+      await api.crearCuenta(form);
+      if (volverATransferir) {
+        navigate('/transferir', { state: { volver: 'cuenta' } });
+        return;
+      }
+      const lista = await api.cuentas();
+      setCuentas(lista);
       setShowForm(false);
       setForm({ banco: '', tipo_cuenta: '', numero_cuenta: '', titular: '' });
     } catch (err) {

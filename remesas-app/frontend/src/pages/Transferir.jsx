@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { fmtCLP, fmtVES } from '../utils/format';
 
@@ -7,25 +7,45 @@ const PASOS = ['Monto', 'Origen', 'Destino', 'Confirmar'];
 
 export default function Transferir() {
   const navigate = useNavigate();
-  const [paso, setPaso] = useState(0);
-  const [modo, setModo] = useState('envio'); // 'envio' = ingresa CLP | 'recibo' = ingresa VES
-  const [valor, setValor] = useState('');
-  const [cotizacion, setCotizacion] = useState(null);
+  const location = useLocation();
+
+  // Restaurar estado guardado al volver de cuentas/destinatarios
+  const saved = (() => { try { return JSON.parse(sessionStorage.getItem('transferir_state') || 'null'); } catch { return null; } })();
+
+  const [paso, setPaso] = useState(saved?.paso ?? 0);
+  const [modo, setModo] = useState(saved?.modo ?? 'envio');
+  const [valor, setValor] = useState(saved?.valor ?? '');
+  const [cotizacion, setCotizacion] = useState(saved?.cotizacion ?? null);
   const [loadingCot, setLoadingCot] = useState(false);
   const [cuentas, setCuentas] = useState([]);
   const [destinatarios, setDestinatarios] = useState([]);
   const [limites, setLimites] = useState(null);
-  const [cuentaId, setCuentaId] = useState('');
-  const [destId, setDestId] = useState('');
+  const [cuentaId, setCuentaId] = useState(saved?.cuentaId ?? '');
+  const [destId, setDestId] = useState(saved?.destId ?? '');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
   const [errorLimite, setErrorLimite] = useState(false);
+  const [err2fa, setErr2fa] = useState(false);
   const [exito, setExito] = useState(null);
   const debounceRef = useRef(null);
 
+  // Guardar estado antes de navegar a otra página
+  function guardarEstado(pasoActual) {
+    sessionStorage.setItem('transferir_state', JSON.stringify({ paso: pasoActual, modo, valor, cotizacion, cuentaId, destId }));
+  }
+
   useEffect(() => {
-    api.cuentas().then(setCuentas).catch(() => {});
-    api.destinatarios().then(setDestinatarios).catch(() => {});
+    // Limpiar estado guardado solo al montar sin volver de otra página
+    if (!location.state?.volver) sessionStorage.removeItem('transferir_state');
+    api.cuentas().then(d => {
+      setCuentas(d);
+      // Si volvimos y no hay cuenta seleccionada, preseleccionar la más reciente
+      if (!cuentaId && d.length > 0 && location.state?.volver === 'cuenta') setCuentaId(d[0].id);
+    }).catch(() => {});
+    api.destinatarios().then(d => {
+      setDestinatarios(d);
+      if (!destId && d.length > 0 && location.state?.volver === 'destinatario') setDestId(d[0].id);
+    }).catch(() => {});
     api.stats().then(s => setLimites(s.limites)).catch(() => {});
   }, []);
 
@@ -62,6 +82,7 @@ export default function Transferir() {
   async function confirmar() {
     setError('');
     setErrorLimite(false);
+    setErr2fa(false);
     setEnviando(true);
     try {
       const t = await api.crearTransferencia({
@@ -69,10 +90,12 @@ export default function Transferir() {
         destinatario_id: destId,
         monto_clp: cotizacion.monto_clp,
       });
+      sessionStorage.removeItem('transferir_state');
       setExito(t);
     } catch (err) {
       setError(err.message);
       if (err.codigo === 'LIMITE_EXCEDIDO') setErrorLimite(true);
+      if (err.codigo === 'REQUIERE_2FA') setErr2fa(true);
     } finally {
       setEnviando(false);
     }
@@ -81,27 +104,38 @@ export default function Transferir() {
   if (exito) {
     return (
       <div className="max-w-md mx-auto space-y-5">
-        <div className="card text-center space-y-4">
-          <div className="text-5xl">✅</div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">¡Transferencia enviada!</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Tu dinero está siendo procesado</p>
-          <div className="bg-brand-50 rounded-xl p-4 text-left space-y-2">
+        <div className="card space-y-4">
+          <div className="text-center">
+            <div className="text-5xl mb-2">📋</div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">¡Orden registrada!</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Ahora debes realizar la transferencia bancaria</p>
+          </div>
+          <div className="bg-brand-50 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Referencia</span>
-              <span className="font-mono font-semibold">{exito.referencia}</span>
+              <span className="text-gray-500">Referencia</span>
+              <span className="font-mono font-bold text-brand-700">{exito.referencia}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">Enviaste</span>
+              <span className="text-gray-500">Monto a transferir</span>
               <span className="font-semibold">${fmtCLP(exito.monto_clp)} CLP</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">El destinatario recibe</span>
+              <span className="text-gray-500">El destinatario recibe</span>
               <span className="font-semibold text-brand-600">{fmtVES(exito.monto_ves)} Bs.</span>
             </div>
           </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+            <p className="font-semibold text-amber-800 text-sm">Pasos para completar tu envío:</p>
+            <ol className="text-sm text-amber-700 space-y-1 list-decimal list-inside">
+              <li>Transfiere <strong>${fmtCLP(exito.monto_clp)} CLP</strong> a nuestra cuenta bancaria</li>
+              <li>Usa como referencia: <strong className="font-mono">{exito.referencia}</strong></li>
+              <li>Una vez recibido el pago, procesamos tu envío a Venezuela</li>
+            </ol>
+            <p className="text-xs text-amber-600 mt-2">Recibirás una notificación cuando el pago sea confirmado y el dinero entregado.</p>
+          </div>
           <div className="flex gap-3">
-            <button className="btn-secondary flex-1" onClick={() => navigate(`/historial/${exito.id}`)}>Ver detalle</button>
-            <button className="btn-primary flex-1" onClick={() => { setExito(null); setPaso(0); setValor(''); setCotizacion(null); }}>Nueva</button>
+            <button className="btn-secondary flex-1" onClick={() => navigate(`/historial/${exito.id}`)}>Ver seguimiento</button>
+            <button className="btn-primary flex-1" onClick={() => { setExito(null); setPaso(0); setValor(''); setCotizacion(null); setCuentaId(''); setDestId(''); }}>Nueva transferencia</button>
           </div>
         </div>
       </div>
@@ -183,7 +217,8 @@ export default function Transferir() {
           {cuentas.length === 0 ? (
             <div className="text-center py-6 text-gray-400">
               <p>No tienes cuentas registradas</p>
-              <Link to="/cuentas" className="text-brand-600 text-sm font-medium hover:underline">Agregar cuenta →</Link>
+              <button onClick={() => { guardarEstado(1); navigate('/cuentas', { state: { volver: 'cuenta' } }); }}
+                className="text-brand-600 text-sm font-medium hover:underline">Agregar cuenta →</button>
             </div>
           ) : (
             <div className="space-y-2">
@@ -214,7 +249,8 @@ export default function Transferir() {
           {destinatarios.length === 0 ? (
             <div className="text-center py-6 text-gray-400">
               <p>No tienes destinatarios registrados</p>
-              <Link to="/destinatarios" className="text-brand-600 text-sm font-medium hover:underline">Agregar destinatario →</Link>
+              <button onClick={() => { guardarEstado(2); navigate('/destinatarios', { state: { volver: 'destinatario' } }); }}
+                className="text-brand-600 text-sm font-medium hover:underline">Agregar destinatario →</button>
             </div>
           ) : (
             <div className="space-y-2">
@@ -252,6 +288,7 @@ export default function Transferir() {
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
                 {error}
                 {errorLimite && <div className="mt-2"><Link to="/verificacion" className="font-medium underline">Verificar mi identidad →</Link></div>}
+                {err2fa && <div className="mt-2"><Link to="/perfil" className="font-medium underline">Activar 2FA en Mi Perfil →</Link></div>}
               </div>
             )}
             <div className="space-y-3">

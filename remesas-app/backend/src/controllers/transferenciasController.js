@@ -46,6 +46,14 @@ async function crear(req, res) {
 
   const user = await db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
 
+  // Seguridad: el usuario debe tener 2FA activo para poder enviar dinero
+  if (!user.totp_enabled) {
+    return res.status(403).json({
+      error: 'Debes activar la verificación en dos pasos (2FA) antes de realizar transferencias. Actívala en Mi Perfil → Seguridad.',
+      codigo: 'REQUIERE_2FA',
+    });
+  }
+
   // Validación de límites por nivel KYC (cumplimiento / anti-lavado)
   const limite = await validarEnvio(user, Number(monto_clp));
   if (!limite.ok) return res.status(403).json({ error: limite.error, codigo: 'LIMITE_EXCEDIDO' });
@@ -70,16 +78,13 @@ async function crear(req, res) {
       calc.monto_clp, calc.tasa_usd_clp, calc.tasa_usd_ves,
       calc.monto_usd, calc.monto_ves, calc.comision_clp, referencia);
 
-    await registrarEvento(id, 'pendiente', 'Transferencia creada y recibida');
+    await registrarEvento(id, 'pendiente', 'Transferencia creada — esperando confirmación de pago');
     notif.crear(req.userId, {
       tipo: 'transferencia',
       titulo: 'Transferencia recibida 📨',
-      mensaje: `Tu envío de $${calc.monto_clp.toLocaleString('es-CL')} CLP a ${destinatario.nombre} fue recibido. Ref: ${referencia}`,
+      mensaje: `Tu envío de $${calc.monto_clp.toLocaleString('es-CL')} CLP a ${destinatario.nombre} fue registrado. Realiza la transferencia bancaria para completar el proceso. Ref: ${referencia}`,
       meta: { transferencia_id: id },
     });
-
-    // Simulación del ciclo de vida del pago. En producción lo gobierna el procesador real.
-    simularCicloVida(id, req.userId, destinatario.nombre, calc.monto_ves);
 
     const transferencia = await db.prepare('SELECT * FROM transferencias WHERE id=?').get(id);
     res.status(201).json({ ...transferencia, cuenta, destinatario, calculo: calc });
@@ -88,32 +93,6 @@ async function crear(req, res) {
   }
 }
 
-function simularCicloVida(id, userId, destNombre, montoVes) {
-  setTimeout(async () => {
-    try {
-      await db.prepare("UPDATE transferencias SET estado='procesando', updated_at=CURRENT_TIMESTAMP WHERE id=? AND estado='pendiente'").run(id);
-      await registrarEvento(id, 'procesando', 'Débito confirmado en cuenta de origen. Procesando con la red bancaria.');
-    } catch (e) { /* noop */ }
-  }, 3000);
-
-  setTimeout(async () => {
-    try {
-      const t = await db.prepare('SELECT estado FROM transferencias WHERE id=?').get(id);
-      if (t && t.estado === 'procesando') {
-        await db.prepare("UPDATE transferencias SET estado='completada', updated_at=CURRENT_TIMESTAMP WHERE id=?").run(id);
-        await registrarEvento(id, 'completada', 'Fondos depositados en el destino');
-        notif.crear(userId, {
-          tipo: 'transferencia',
-          titulo: '¡Transferencia completada! ✅',
-          mensaje: `${destNombre} recibió ${Math.round(montoVes).toLocaleString('es-VE')} Bs.`,
-          meta: { transferencia_id: id },
-        });
-        const full = await db.prepare('SELECT id, referencia, monto_clp, monto_ves FROM transferencias WHERE id=?').get(id);
-        email.enviarPlantilla(userId, 'transferencia_completada', full);
-      }
-    } catch (e) { /* noop */ }
-  }, 8000);
-}
 
 async function listar(req, res) {
   const { page = 1, limit = 10, estado } = req.query;

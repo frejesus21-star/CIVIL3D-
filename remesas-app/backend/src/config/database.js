@@ -136,6 +136,8 @@ function crearSqlite() {
       ensureColumn('users', 'totp_secret', 'totp_secret TEXT');
       ensureColumn('users', 'totp_enabled', 'totp_enabled INTEGER NOT NULL DEFAULT 0');
       ensureColumn('users', 'email_verificado', 'email_verificado INTEGER NOT NULL DEFAULT 0');
+      ensureColumn('users', 'kyc_foto_documento', 'kyc_foto_documento TEXT');
+      ensureColumn('users', 'kyc_foto_selfie', 'kyc_foto_selfie TEXT');
       sdb.exec(SEED_CONFIG);
     },
   };
@@ -201,6 +203,9 @@ function crearPostgres() {
       const schema = fs.readFileSync(path.join(__dirname, '../../scripts/pg-schema.sql'), 'utf8');
       await pool.query(schema);
       await pool.query(SEED_CONFIG);
+      // Migraciones idempotentes para columnas nuevas
+      await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_foto_documento TEXT');
+      await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_foto_selfie TEXT');
     },
   };
 }
