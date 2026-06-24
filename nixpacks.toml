@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_22", "npm-10_x"]
+
+[phases.build]
+cmds = [
+  "cd remesas-app/backend && npm install",
+  "cd remesas-app/frontend && npm install && npm run build"
+]
+
+[start]
+cmd = "cd remesas-app/backend && node src/index.js"
