@@ -51,7 +51,7 @@ export default function Dashboard() {
               <p className="text-2xl font-bold">${fmtCLP(tasas.usd_clp)} CLP</p>
             </div>
             <div>
-              <p className="text-brand-200 text-xs">1 USD = (paralelo)</p>
+              <p className="text-brand-200 text-xs">1 USD = (promedio)</p>
               <p className="text-2xl font-bold">{fmtCLP(tasas.usd_ves)} Bs.</p>
             </div>
           </div>

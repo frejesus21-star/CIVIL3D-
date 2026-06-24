@@ -98,7 +98,7 @@ export default function AdminTasas() {
           {info && (
             <div className="space-y-3">
               <InfoRow label="USD / CLP" value={info.rates.usd_clp?.toLocaleString('es-CL', { maximumFractionDigits: 2 })} />
-              <InfoRow label="USD / VES (paralelo)" value={info.rates.usd_ves?.toLocaleString('es-VE', { maximumFractionDigits: 2 })} />
+              <InfoRow label="USD / VES (promedio)" value={info.rates.usd_ves?.toLocaleString('es-VE', { maximumFractionDigits: 2 })} />
               <InfoRow label="Fuente" value={info.rates.fuente} />
               {info.cache && <InfoRow label="Última actualización" value={new Date(info.cache.updated_at).toLocaleString('es-CL')} />}
               {info.cache?.manual === 1 && (
@@ -132,7 +132,7 @@ export default function AdminTasas() {
                 required />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600 block mb-1">1 USD = ___ VES (dólar paralelo)</label>
+              <label className="text-sm font-medium text-gray-600 block mb-1">1 USD = ___ VES (dólar promedio)</label>
               <input type="number" step="0.01" min="1"
                 className="input w-full" value={form.usd_ves}
                 onChange={e => setForm(f => ({ ...f, usd_ves: e.target.value }))}

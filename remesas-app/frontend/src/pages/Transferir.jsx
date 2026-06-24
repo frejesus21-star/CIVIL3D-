@@ -158,7 +158,7 @@ export default function Transferir() {
               <div className="border-t border-brand-200 pt-2 flex justify-between text-sm"><span className="text-gray-600 dark:text-gray-300">Neto</span><span>${fmtCLP(cotizacion.monto_neto_clp)} CLP</span></div>
               <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-gray-300">Equivalente USD</span><span>${cotizacion.monto_usd} USD</span></div>
               <div className="flex justify-between font-bold text-brand-700"><span>Destinatario recibe</span><span>{fmtVES(cotizacion.monto_ves)} Bs.</span></div>
-              <p className="text-xs text-gray-400 pt-1">Tasa: 1 USD = {fmtCLP(cotizacion.tasa_usd_ves)} Bs. (paralelo) · {fmtCLP(cotizacion.tasa_usd_clp)} CLP</p>
+              <p className="text-xs text-gray-400 pt-1">Tasa: 1 USD = {fmtCLP(cotizacion.tasa_usd_ves)} Bs. (promedio) · {fmtCLP(cotizacion.tasa_usd_clp)} CLP</p>
             </div>
           )}
 

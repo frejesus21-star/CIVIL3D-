@@ -122,7 +122,7 @@ export default function DetalleTransferencia() {
         <Fila k="Destinatario recibe" v={<span className="font-bold text-brand-600">{fmtVES(t.monto_ves)} Bs.</span>} />
         <Sep />
         <Fila k="Tasa USD/CLP" v={fmtCLP(t.tasa_usd_clp)} />
-        <Fila k="Tasa USD/VES (paralelo)" v={fmtCLP(t.tasa_usd_ves)} />
+        <Fila k="Tasa USD/VES (promedio)" v={fmtCLP(t.tasa_usd_ves)} />
         <Sep />
         <Fila k="Desde" v={`${t.origen_banco} · ···${t.origen_numero.slice(-4)}`} />
         <Fila k="Titular" v={t.origen_titular} />

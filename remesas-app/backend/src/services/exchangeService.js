@@ -17,14 +17,13 @@ const FALLBACK_USD_CLP = parseFloat(process.env.FALLBACK_USD_CLP || '950');
 const FALLBACK_USD_VES = parseFloat(process.env.FALLBACK_USD_VES || '45');
 
 async function fetchParaleloDolar() {
-  // Monitor Dólar Venezuela API (paralelo)
-  const res = await fetch('https://ve.dolarapi.com/v1/dolares/paralelo', {
+  // Monitor Dólar Venezuela API (promedio)
+  const res = await fetch('https://ve.dolarapi.com/v1/dolares/promedio', {
     headers: { 'Accept': 'application/json' },
     timeout: 8000,
   });
   if (!res.ok) throw new Error(`dolarapi error: ${res.status}`);
   const data = await res.json();
-  // data.promedio = tasa paralelo VES por 1 USD
   return parseFloat(data.promedio);
 }
 

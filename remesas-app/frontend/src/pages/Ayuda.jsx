@@ -12,7 +12,7 @@ const FAQS = [
   },
   {
     q: '¿Qué tasa de cambio usan?',
-    a: 'Usamos la tasa del dólar paralelo de Venezuela en tiempo real. La conversión es CLP → USD → VES. Verás la tasa exacta antes de confirmar cada envío.',
+    a: 'Usamos la tasa del dólar promedio de Venezuela en tiempo real. La conversión es CLP → USD → VES. Verás la tasa exacta antes de confirmar cada envío.',
   },
   {
     q: '¿Cuánto cobran de comisión?',
