@@ -140,9 +140,10 @@ async function listarTransferencias(req, res) {
   res.json({ rows, total, pages: Math.ceil(total / limit), page });
 }
 
+const estados = ['pendiente', 'pagado', 'procesando', 'completada', 'fallida', 'cancelada'];
+
 async function actualizarTransferencia(req, res) {
   const { estado, notas_admin } = req.body;
-  const estados = ['pendiente', 'procesando', 'completada', 'fallida', 'cancelada'];
   if (estado && !estados.includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
 
   const t = await db.prepare('SELECT id, user_id, estado FROM transferencias WHERE id=?').get(req.params.id);
@@ -313,4 +314,77 @@ async function exportarTransferencias(req, res) {
   res.send(toCSV(headers, data));
 }
 
-module.exports = { stats, listarUsuarios, getUsuario, aprobarKYC, rechazarKYC, listarTransferencias, actualizarTransferencia, getTasas, setTasas, resetTasas, getConfigAdmin, setConfigAdmin, listarLog, exportarUsuarios, exportarTransferencias };
+// ── Operaciones Venezuela ──────────────────────────────────────────────────
+
+// Lista transferencias listas para pagar en Venezuela (estado 'pagado' o 'procesando')
+async function listarOperacionesVE(req, res) {
+  const { estado = 'pagado' } = req.query;
+  const rows = await db.prepare(`
+    SELECT t.id, t.referencia, t.monto_clp, t.monto_ves, t.monto_usd,
+           t.tasa_usd_ves, t.estado, t.created_at,
+           u.nombre as usuario_nombre, u.email as usuario_email,
+           d.nombre as dest_nombre, d.tipo as dest_tipo, d.banco as dest_banco,
+           d.numero_cuenta as dest_cuenta, d.cedula as dest_cedula,
+           d.telefono as dest_telefono,
+           op.comprobante_ve, op.metodo_pago_ve, op.notas_ve, op.pagado_ve_at,
+           op.tasa_usdt_ves_real, op.monto_usdt_enviado
+    FROM transferencias t
+    JOIN users u ON u.id = t.user_id
+    JOIN destinatarios d ON d.id = t.destinatario_id
+    LEFT JOIN operaciones_ve op ON op.transferencia_id = t.id
+    WHERE t.estado = ?
+    ORDER BY t.created_at ASC
+  `).all(estado);
+  res.json(rows);
+}
+
+// Registra que se hizo el pago en Venezuela
+async function registrarPagoVE(req, res) {
+  const { comprobante_ve, metodo_pago_ve, notas_ve, tasa_usdt_ves_real, monto_usdt_enviado } = req.body;
+  const t = await db.prepare('SELECT * FROM transferencias WHERE id=?').get(req.params.id);
+  if (!t) return res.status(404).json({ error: 'Transferencia no encontrada' });
+  if (!['pagado', 'procesando'].includes(t.estado)) {
+    return res.status(409).json({ error: 'La transferencia no está en estado pagado o procesando' });
+  }
+
+  // Guardar registro de operación Venezuela
+  const existing = await db.prepare('SELECT id FROM operaciones_ve WHERE transferencia_id=?').get(t.id);
+  if (existing) {
+    await db.prepare(`
+      UPDATE operaciones_ve SET comprobante_ve=?, metodo_pago_ve=?, notas_ve=?,
+        tasa_usdt_ves_real=?, monto_usdt_enviado=?, pagado_ve_at=CURRENT_TIMESTAMP
+      WHERE transferencia_id=?
+    `).run(comprobante_ve, metodo_pago_ve || 'pago_movil', notas_ve, tasa_usdt_ves_real, monto_usdt_enviado, t.id);
+  } else {
+    await db.prepare(`
+      INSERT INTO operaciones_ve (id, transferencia_id, comprobante_ve, metodo_pago_ve, notas_ve, tasa_usdt_ves_real, monto_usdt_enviado, pagado_ve_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(randomUUID(), t.id, comprobante_ve, metodo_pago_ve || 'pago_movil', notas_ve, tasa_usdt_ves_real, monto_usdt_enviado);
+  }
+
+  // Cambiar estado a completada
+  await db.prepare("UPDATE transferencias SET estado='completada', updated_at=CURRENT_TIMESTAMP WHERE id=?").run(t.id);
+  await db.prepare('INSERT INTO transferencia_eventos (id,transferencia_id,estado,descripcion) VALUES (?,?,?,?)').run(
+    randomUUID(), t.id, 'completada', `Pago realizado en Venezuela — ${metodo_pago_ve || 'pago_movil'} — Comprobante: ${comprobante_ve}`
+  );
+
+  // Notificar al usuario
+  await db.prepare(`INSERT INTO notificaciones (id,user_id,tipo,titulo,mensaje,meta) VALUES (?,?,?,?,?,?)`).run(
+    randomUUID(), t.user_id, 'exito', '¡Dinero entregado!',
+    `Tu envío de ${t.monto_ves} Bs. a fue entregado exitosamente. Ref: ${t.referencia}`,
+    JSON.stringify({ transferencia_id: t.id })
+  );
+
+  audit.registrar(req, { accion: 'pago_ve_registrado', entidad: 'transferencia', entidad_id: t.id, detalle: { comprobante_ve, metodo_pago_ve } });
+  res.json({ ok: true });
+}
+
+// Estadísticas de liquidez y operaciones
+async function statsLiquidez(req, res) {
+  const pendientesPago = (await db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_ves),0) as total_ves, COALESCE(SUM(monto_usd),0) as total_usd FROM transferencias WHERE estado='pagado'").get());
+  const enProceso = (await db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_ves),0) as total_ves FROM transferencias WHERE estado='procesando'").get());
+  const completadasHoy = (await db.prepare("SELECT COUNT(*) as n, COALESCE(SUM(monto_clp),0) as vol_clp FROM transferencias WHERE estado='completada' AND DATE(updated_at)=DATE('now')").get());
+  res.json({ pendientesPago, enProceso, completadasHoy });
+}
+
+module.exports = { stats, listarUsuarios, getUsuario, aprobarKYC, rechazarKYC, listarTransferencias, actualizarTransferencia, getTasas, setTasas, resetTasas, getConfigAdmin, setConfigAdmin, listarLog, exportarUsuarios, exportarTransferencias, listarOperacionesVE, registrarPagoVE, statsLiquidez };

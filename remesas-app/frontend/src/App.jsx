@@ -22,6 +22,7 @@ import AdminUsuarios from './pages/admin/AdminUsuarios';
 import AdminTransferencias from './pages/admin/AdminTransferencias';
 import AdminTasas from './pages/admin/AdminTasas';
 import AdminLog from './pages/admin/AdminLog';
+import AdminOperacionesVE from './pages/admin/AdminOperacionesVE';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -60,6 +61,7 @@ export default function App() {
         <Route path="/admin/usuarios" element={<AdminUsuarios />} />
         <Route path="/admin/transferencias" element={<AdminTransferencias />} />
         <Route path="/admin/tasas" element={<AdminTasas />} />
+        <Route path="/admin/operaciones-ve" element={<AdminOperacionesVE />} />
         <Route path="/admin/auditoria" element={<AdminLog />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

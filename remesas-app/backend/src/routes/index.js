@@ -8,6 +8,7 @@ const transCtrl = require('../controllers/transferenciasController');
 const kycCtrl = require('../controllers/kycController');
 const notifCtrl = require('../controllers/notificacionesController');
 const adminCtrl = require('../controllers/adminController');
+const { listarOperacionesVE, registrarPagoVE, statsLiquidez } = adminCtrl;
 const twoFactorCtrl = require('../controllers/twoFactorController');
 const { getRates } = require('../services/exchangeService');
 
@@ -100,6 +101,11 @@ router.patch('/admin/config', adminAuth, adminCtrl.setConfigAdmin);
 router.get('/admin/log', adminAuth, adminCtrl.listarLog);
 router.get('/admin/export/usuarios', adminAuth, adminCtrl.exportarUsuarios);
 router.get('/admin/export/transferencias', adminAuth, adminCtrl.exportarTransferencias);
+
+// Operaciones Venezuela
+router.get('/admin/operaciones-ve', adminAuth, listarOperacionesVE);
+router.post('/admin/operaciones-ve/:id/pagar', adminAuth, registrarPagoVE);
+router.get('/admin/liquidez', adminAuth, statsLiquidez);
 
 // Promoción de usuario a admin (solo por consola / primer uso protegido por contraseña de env)
 router.post('/admin/seed', async (req, res) => {

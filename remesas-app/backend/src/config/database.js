@@ -85,6 +85,18 @@ const SQLITE_SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_admin_log ON admin_log(created_at);
   CREATE INDEX IF NOT EXISTS idx_backup_user ON backup_codes(user_id, usado);
   CREATE INDEX IF NOT EXISTS idx_tokens ON tokens(tipo, token_hash);
+  CREATE TABLE IF NOT EXISTS operaciones_ve (
+    id TEXT PRIMARY KEY,
+    transferencia_id TEXT NOT NULL UNIQUE REFERENCES transferencias(id),
+    comprobante_ve TEXT,
+    metodo_pago_ve TEXT DEFAULT 'pago_movil',
+    notas_ve TEXT,
+    tasa_usdt_ves_real REAL,
+    monto_usdt_enviado REAL,
+    pagado_ve_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_op_ve_trans ON operaciones_ve(transferencia_id);
 `;
 
 const SEED_CONFIG = `
@@ -216,6 +228,20 @@ function crearPostgres() {
         ALTER TABLE transferencias ADD CONSTRAINT transferencias_estado_check
           CHECK (estado IN ('pendiente','pagado','procesando','completada','fallida','cancelada'));
       `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS operaciones_ve (
+          id TEXT PRIMARY KEY,
+          transferencia_id TEXT NOT NULL UNIQUE REFERENCES transferencias(id),
+          comprobante_ve TEXT,
+          metodo_pago_ve TEXT DEFAULT 'pago_movil',
+          notas_ve TEXT,
+          tasa_usdt_ves_real DOUBLE PRECISION,
+          monto_usdt_enviado DOUBLE PRECISION,
+          pagado_ve_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ DEFAULT now()
+        )
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_op_ve_trans ON operaciones_ve(transferencia_id)`);
     },
   };
 }
