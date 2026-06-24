@@ -210,6 +210,12 @@ function crearPostgres() {
       await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_foto_documento TEXT');
       await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_foto_selfie TEXT');
       await pool.query('ALTER TABLE transferencias ADD COLUMN IF NOT EXISTS khipu_payment_id TEXT');
+      // Ampliar CHECK constraint para incluir estado 'pagado'
+      await pool.query(`
+        ALTER TABLE transferencias DROP CONSTRAINT IF EXISTS transferencias_estado_check;
+        ALTER TABLE transferencias ADD CONSTRAINT transferencias_estado_check
+          CHECK (estado IN ('pendiente','pagado','procesando','completada','fallida','cancelada'));
+      `);
     },
   };
 }
