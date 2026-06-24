@@ -96,16 +96,16 @@ const SEED_CONFIG = `
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Implementación SQLite (better-sqlite3, síncrono envuelto en async)
+// Implementación SQLite (node:sqlite nativo, sin compilación)
 // ─────────────────────────────────────────────────────────────────────────────
 function crearSqlite() {
-  const Database = require('better-sqlite3');
+  const { DatabaseSync } = require('node:sqlite');
   const fs = require('fs');
   const DB_PATH = process.env.DB_PATH || path.join(__dirname, '../../data/remesas.db');
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  const sdb = new Database(DB_PATH);
-  sdb.pragma('journal_mode = WAL');
-  sdb.pragma('foreign_keys = ON');
+  const sdb = new DatabaseSync(DB_PATH);
+  sdb.exec("PRAGMA journal_mode = WAL");
+  sdb.exec("PRAGMA foreign_keys = ON");
 
   function prepare(sql) {
     const stmt = sdb.prepare(sql);
